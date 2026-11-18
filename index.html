@@ -289,16 +289,41 @@ const TRACKS=[
  {name:'Valle Rossa',code:'VRS',laps:24,base:84,pit:21,w:wts(2,1.5,1.5,2,2,2),rain:.25,abr:1.1,ovt:.95,opt:[58,45,64],theme:'forest',ps:1,pts:[[12,30],[40,10],[88,20],[80,45],[55,40],[45,60],[85,75],[70,92],[20,80]]},
 ];
 TRACKS.forEach(t=>t.cap=Math.ceil(t.laps*.62)+1);
-const TEAM_DEFS=[
+// Three championships. Level 0 is the top tier. Teams move between them by promotion and relegation.
+const SERIES=[
+ {name:'Apex World Championship',short:'Apex',base:60,spread:28,drv:[.55,1],budget:[12,22],sponsor:[1.6,3],running:.9,ppp:.05,cost:1,prize:1},
+ {name:'Meridian Cup',short:'Meridian',base:46,spread:26,drv:[.35,.75],budget:[6,12],sponsor:[.8,1.4],running:.45,ppp:.025,cost:.55,prize:.5},
+ {name:'Frontier Series',short:'Frontier',base:32,spread:26,drv:[.15,.55],budget:[3,7],sponsor:[.4,.8],running:.25,ppp:.012,cost:.3,prize:.25}];
+const lerp=(a,b,t)=>a+(b-a)*t;
+// [id, name, short, colour, quality within its series 0..1, description]
+const TEAM_DEFS=[[
  ['H','Halvorsen Racing','HAL','#d64545',.95,'The benchmark. A deep budget and a title-winning car, but the board accepts nothing less than wins.'],
- ['A','Aurelia Motorsport','AUR','#e0b23b',.88,'Smooth operators with a sharp aero department. They expect podiums every weekend.'],
- ['K','Kestrel Dynamics','KES','#4aa8ff',.8,'Ambitious engineers who out-develop richer rivals. Points every race is the minimum.'],
- ['B','Brannigan Works','BRA','#3cb371',.72,'A family-run works team with a loyal sponsor and a strong engine shop.'],
- ['V','Vostok Autosport','VOS','#c9d1d9',.65,'Well funded and impatient. Quick in a straight line, fragile everywhere else.'],
- ['M','Marisol Racing','MAR','#e05fbf',.6,'A young outfit with a talented design office and very little money.'],
- ['T','Tidewater GP','TID','#2fc5b5',.55,'Coastal privateers who live race to race. Survival is the goal; anything more is a bonus.'],
- ['C','Corsa Vale Racing','COR','#ff8c3a',.47,'A new team at the back of the grid. Nothing to lose and a long way to climb. You can rename it.']];
-const NAMES=['Teo Marchetti','Lukas Brandt','Aiko Tanabe','Rafael Ortega','Sam Whitlock','Niko Halonen','Ines Duarte','Jonah Reyes','Clara Weiss','Oskar Lind','Priya Nair','Felix Moreau','Dmitri Sorokin','Yusuf Kaya','Hugo Lemaire','Elias Brennan','Kai Morimoto','Leo Castellan','Mila Novak','Arjun Mehta','Tomas Ekholm','Zara Okafor','Bruno Salvi','Freya Holm','Marco Vidal','Ren Ashby'];
+ ['A','Aurelia Motorsport','AUR','#e0b23b',.85,'Smooth operators with a sharp aero department. They expect podiums every weekend.'],
+ ['K','Kestrel Dynamics','KES','#4aa8ff',.75,'Ambitious engineers who out-develop richer rivals. Points every race is the minimum.'],
+ ['B','Brannigan Works','BRA','#3cb371',.62,'A family-run works team with a loyal sponsor and a strong engine shop.'],
+ ['V','Vostok Autosport','VOS','#c9d1d9',.52,'Well funded and impatient. Quick in a straight line, fragile everywhere else.'],
+ ['M','Marisol Racing','MAR','#e05fbf',.42,'A young outfit with a talented design office and very little money for this level.'],
+ ['T','Tidewater GP','TID','#2fc5b5',.32,'Coastal privateers clinging on at the top level. Staying up is the goal.'],
+ ['S','Solano Corse','SOL','#a0e85b',.22,'Newly promoted and outgunned. Survival would be a triumph.']],[
+ ['N','Northgate Racing','NOR','#5b7cfa',.9,'The class of the Meridian Cup, and desperate to step up to the top tier.'],
+ ['F','Ferro Motorsport','FER','#c0392b',.78,'A proud name that fell from the top tier. The board wants it back.'],
+ ['L','Lindqvist Engineering','LIN','#9aa5b1',.68,'Methodical, reliable and never quite fast enough. Yet.'],
+ ['Y','Yamato Speed','YAM','#e84393',.58,'A brilliant engine partner and a chassis that needs work.'],
+ ['R','Ridgeback Racing','RID','#7cb342',.48,'Scrappy and popular. Points finishes keep the sponsors happy.'],
+ ['O','Orla GP','ORL','#00acc1',.38,'A small team with big ideas and a tight budget.'],
+ ['Z','Zenith Motorworks','ZEN','#8e44ad',.28,'Struggling to stay in the Meridian Cup.'],
+ ['G','Greywater Racing','GRE','#607d8b',.18,'Just promoted from the Frontier Series. Every point counts.']],[
+ ['W','Westwind Racing','WES','#ffb300',.9,'Frontier favourites with the money to win it this year.'],
+ ['D','Duna Autosport','DUN','#d4a373',.78,'Relegated last season and determined to bounce straight back.'],
+ ['E','Ember Racing','EMB','#ff5722',.66,'A hot-headed team with a fast car and a short temper.'],
+ ['Q','Quarry Lane Motorsport','QUA','#8d6e63',.55,'A works garage turned race team. Tough cars, slow upgrades.'],
+ ['I','Iris Racing','IRI','#ce93d8',.45,'A driver academy with a race team attached.'],
+ ['U','Union Speedworks','UNI','#26a69a',.35,'A co-operative of mechanics who race on weekends.'],
+ ['X','Calder Racing','CAL','#42a5f5',.25,'Family money, family drivers, family arguments.'],
+ ['C','Corsa Vale Racing','COR','#ff8c3a',.12,'A new team at the very bottom of the ladder. Win the Frontier Series to go up. You can rename it.']]];
+const FIRST=['Teo','Lukas','Aiko','Rafael','Sam','Niko','Ines','Jonah','Clara','Oskar','Priya','Felix','Dmitri','Yusuf','Hugo','Elias','Kai','Leo','Mila','Arjun','Tomas','Zara','Bruno','Freya','Marco','Ren','Noor','Ivo','Lena','Mateus','Saoirse','Viktor','Amara','Jules','Tariq','Esme','Pavel','Hana','Diego','Ola'];
+const LAST=['Marchetti','Brandt','Tanabe','Ortega','Whitlock','Halonen','Duarte','Reyes','Weiss','Lind','Nair','Moreau','Sorokin','Kaya','Lemaire','Brennan','Morimoto','Castellan','Novak','Mehta','Ekholm','Okafor','Salvi','Holm','Vidal','Ashby','Farouk','Petrov','Lindgren','Barros','Quinn','Haas','Mensah','Roux','Saleh','Pryce','Dvorak','Sato','Ferreira','Berg'];
+function nameGen(){const used=new Set();return()=>{let n;do{n=pick(FIRST)+' '+pick(LAST)}while(used.has(n));used.add(n);return n}}
 const COLORS=['#ff8c3a','#9b7bff','#ff5fa2','#c8e64a','#38b6ff','#f2f2f2'];
 const QUESTIONS=[
  {q:'A difficult afternoon. What went wrong out there?',a:[['We will learn from it and come back stronger.',{both:3}],['The car simply is not quick enough yet.',{both:1}],['The drivers made mistakes we cannot afford.',{both:-6}]]},
@@ -310,13 +335,15 @@ const QUESTIONS=[
 
 /* ---------- state ---------- */
 let G=null,W=null,RS=null;
-const UI={tab:'overview',raf:0,lastUi:0,last:0,newColor:'#ff8c3a',toastT:0,dpart:'engine',sel:7,cam:{mode:'follow',x:0,y:0,k:0},pop:[null,null],sp:{}};
-const SAVE='pitwall-save-v2';
-function save(){try{localStorage.setItem(SAVE,JSON.stringify({G,W}))}catch(e){}}
+const UI={pick:[2,7],stSer:null,tab:'overview',raf:0,lastUi:0,last:0,newColor:'#ff8c3a',toastT:0,dpart:'engine',sel:7,cam:{mode:'follow',x:0,y:0,k:0},pop:[null,null],sp:{}};
+const SAVE='pitwall-save-v3';
+// G.teams is the championship the player races in: always the same array as G.series[G.tier]
+function save(){try{localStorage.setItem(SAVE,JSON.stringify({G:{...G,teams:undefined},W}))}catch(e){}}
 function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return !!(s&&s.G)}catch(e){return false}}
-function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;return true}}catch(e){}return false}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;G.teams=G.series[G.tier];return true}}catch(e){}return false}
+const SER=()=>SERIES[G.tier];
 
-const team=id=>G.teams.find(t=>t.id===id);
+const team=id=>{for(const s of G.series){const t=s.find(t=>t.id===id);if(t)return t}};
 const drv=id=>G.drivers[id];
 const PT=()=>team('P');
 const track=()=>TRACKS[G.round];
@@ -329,29 +356,31 @@ function mkDriver(name,tier){
   const d={id,name,code:name.split(' ')[1].slice(0,3).toUpperCase(),num:0,age:RI(19,35),
     pace:s(56+tier*32),racecraft:s(52+tier*34),tyre:s(50+tier*34),consistency:s(52+tier*34),wet:s(48+tier*36),
     morale:RI(55,75),points:0,wins:0,podiums:0,teamId:null};
-  d.salary=Math.round((0.6+Math.pow(rating(d)/100,3)*6)*10)/10*1e6;
+  d.salary=Math.round((0.15+Math.pow(rating(d)/100,5)*9)*20)/20*1e6;
   G.drivers[id]=d;return d;
 }
-function mkParts(tier){const p={};for(const[k]of PARTS)p[k]={perf:Math.round(48+tier*34+R(-4,4)),rel:Math.round(58+tier*28+R(-5,5)),risky:false};return p}
-// preview teams for the team-select screen (generated once, kept for the new game)
+function mkParts(q,lvl){const S=SERIES[lvl];const p={};for(const[k]of PARTS)p[k]={perf:Math.round(S.base+q*S.spread+R(-4,4)),rel:Math.round(58+q*28+R(-5,5)),risky:false};return p}
+const econ=(lvl,q)=>{const S=SERIES[lvl];return{sponsor:Math.round(lerp(...S.sponsor,q)*20)/20*1e6,running:S.running*1e6}};
+// preview teams for the team-select screen, per series (generated once, kept for the new game)
 function previewTeams(){
   if(UI.preview)return UI.preview;
-  UI.preview=TEAM_DEFS.map(([id,n,short,col,tier,desc])=>({id,name:n,short,color:col,tier,desc,parts:mkParts(tier),budget:Math.round(4+tier*14)*1e6}));
+  UI.preview=TEAM_DEFS.map((defs,lvl)=>defs.map(([id,n,short,col,q,desc])=>({id,lvl,name:n,short,color:col,tier:q,desc,parts:mkParts(q,lvl),budget:Math.round(lerp(...SERIES[lvl].budget,q)*2)/2*1e6})));
   return UI.preview;
 }
-function newGame(pickIdx,customName,customColor){
-  G={season:1,round:0,budget:0,nid:1,teams:[],drivers:{},market:[],project:null,screen:'hub',last:null,history:[],seasonLog:[]};
-  const names=NAMES.slice().sort(()=>Math.random()-.5);let ni=0,num=2;
-  previewTeams().forEach((pv,i)=>{
-    const mine=i===pickIdx;
-    const t={id:mine?'P':pv.id,name:pv.name,short:pv.short,color:pv.color,tier:pv.tier,parts:pv.parts,drivers:[],points:0,
-      sponsor:(1.0+pv.tier*1.6)*1e6,running:(.5+pv.tier*.5)*1e6};
+function newGame(pick2,customName,customColor){
+  const[pl,pi]=pick2;
+  G={season:1,round:0,budget:0,nid:1,tier:pl,series:[[],[],[]],drivers:{},market:[],project:null,screen:'hub',last:null,history:[],seasonLog:[]};
+  const nm=nameGen();let num=2;
+  previewTeams().forEach((list,lvl)=>list.forEach((pv,i)=>{
+    const mine=lvl===pl&&i===pi,S=SERIES[lvl];
+    const t={id:mine?'P':pv.id,name:pv.name,short:pv.short,color:pv.color,tier:pv.tier,parts:pv.parts,drivers:[],points:0,...econ(lvl,pv.tier)};
     if(mine&&pv.id==='C'){t.name=customName||pv.name;t.color=customColor||pv.color;t.short=(t.name.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase())||'COR'}
     if(mine)G.budget=pv.budget;
-    for(let k=0;k<2;k++){const d=mkDriver(names[ni++],clamp(pv.tier+R(-.1,.06),.25,1));d.teamId=t.id;d.num=num++;t.drivers.push(d.id)}
-    G.teams.push(t);
-  });
-  for(let k=0;k<6;k++){const d=mkDriver(names[ni++],R(.3,.85));d.num=num++;G.market.push(d.id)}
+    for(let k=0;k<2;k++){const d=mkDriver(nm(),clamp(lerp(...S.drv,pv.tier)+R(-.08,.06),0,1));d.teamId=t.id;d.num=num++;t.drivers.push(d.id)}
+    G.series[lvl].push(t);
+  }));
+  G.teams=G.series[pl];
+  for(let k=0;k<6;k++){const d=mkDriver(nm(),lerp(...SERIES[pl].drv,R(.2,1)));d.num=num++;G.market.push(d.id)}
   UI.preview=null;save();
 }
 
@@ -592,14 +621,15 @@ function finishRace(){
   const mine=o.filter(c=>c.mine);
   if(mine.length===2&&!mine[0].dnf){mine[0].d.morale=clamp(mine[0].d.morale+2,0,100);mine[1].d.morale=clamp(mine[1].d.morale-2,0,100)}
   const target=sponsorTarget();
-  const fin={sponsor:pt.sponsor,bonus:best<=target?.6e6:0,prize:pts*.05e6,salaries:-pt.drivers.reduce((s,id)=>s+drv(id).salary,0)/TRACKS.length,running:-pt.running,fine:0,project:''};
-  for(const[k,n]of PARTS){const p=pt.parts[k];if(p.risky&&Math.random()<.14){p.risky=false;p.perf=Math.max(30,p.perf-8);fin.fine-=1.5e6;fin.project+=`Scrutineers found your ${n.toLowerCase()} outside the rules: fined $1.50M, part rebuilt to legal spec. `}}
+  const fin={sponsor:pt.sponsor,bonus:best<=target?.6e6*SER().cost:0,prize:pts*SER().ppp*1e6,salaries:-pt.drivers.reduce((s,id)=>s+drv(id).salary,0)/TRACKS.length,running:-pt.running,fine:0,project:''};
+  for(const[k,n]of PARTS){const p=pt.parts[k];if(p.risky&&Math.random()<.14){const f=1.5e6*SER().cost;p.risky=false;p.perf=Math.max(20,p.perf-8);fin.fine-=f;fin.project+=`Scrutineers found your ${n.toLowerCase()} outside the rules: fined ${money(f)}, part rebuilt to legal spec. `}}
   if(G.project){G.project.left--;if(G.project.left<=0){const pj=G.project,p=pt.parts[pj.part];
     if(pj.kind==='rel'){p.rel=clamp(p.rel+pj.rel,0,99);fin.project+=`Reliability upgrade fitted to the ${pj.name.toLowerCase()} (+${pj.rel}). `}
     else{p.perf=clamp(p.perf+pj.perf,0,99);p.rel=pj.rel;p.risky=pj.kind==='grey';fin.project+=`New ${pj.name.toLowerCase()} fitted: +${pj.perf} performance, ${pj.rel} reliability. `}
     G.project=null}}
   const net=Object.values(fin).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0);G.budget+=net;
-  for(const t of G.teams)if(t.id!=='P'&&Math.random()<.45+t.tier*.35){const k=pick(PARTS)[0];t.parts[k].perf=clamp(t.parts[k].perf+RI(1,3+Math.round(t.tier*2)),0,99)}
+  for(const t of G.series.flat())if(t.id!=='P'&&Math.random()<.45+t.tier*.35){const k=pick(PARTS)[0];t.parts[k].perf=clamp(t.parts[k].perf+RI(1,3+Math.round(t.tier*2)),0,99)}
+  simOtherSeries();
   const winner=o[0];
   G.history.push({round:G.round,track:tr.name,winner:winner.d.name,wcolor:winner.team.color});
   const qs=QUESTIONS[RI(0,QUESTIONS.length-1)];
@@ -616,22 +646,39 @@ function afterResults(){
   if(G.round>=TRACKS.length){G.screen='season';save();render();return}
   G.screen='hub';UI.tab='overview';save();render();
 }
-function standingsD(){return Object.values(G.drivers).filter(d=>d.teamId).sort((a,b)=>b.points-a.points||b.wins-a.wins)}
-function standingsT(){return G.teams.slice().sort((a,b)=>b.points-a.points)}
+// the races in the other two championships, resolved quickly from car and driver strength
+function simOtherSeries(){
+  G.series.forEach((list,lvl)=>{if(lvl===G.tier)return;
+    const es=[];for(const t of list)for(const id of t.drivers){const d=drv(id);es.push({d,t,s:carAvg(t)+d.pace*.85+gauss()*7,dnf:Math.random()<.06})}
+    es.sort((a,b)=>(a.dnf-b.dnf)||b.s-a.s);
+    es.forEach((e,i)=>{if(e.dnf)return;const p=i<10?POINTS[i]:0;e.d.points+=p;e.t.points+=p;if(i===0)e.d.wins++;if(i<3)e.d.podiums++});
+  });
+}
+function standingsD(lvl=G.tier){const ids=new Set(G.series[lvl].map(t=>t.id));return Object.values(G.drivers).filter(d=>ids.has(d.teamId)).sort((a,b)=>b.points-a.points||b.wins-a.wins)}
+function standingsT(lvl=G.tier){return G.series[lvl].slice().sort((a,b)=>b.points-a.points)}
 const PRIZE=[8,6.5,5,4,3,2.5,2,1.5];
+// top 2 of each lower championship go up, bottom 2 of each upper one go down
+function seasonMoves(){const mv=[];for(let l=0;l<2;l++){standingsT(l).slice(-2).forEach(t=>mv.push({id:t.id,from:l,to:l+1}));standingsT(l+1).slice(0,2).forEach(t=>mv.push({id:t.id,from:l+1,to:l}))}return mv}
 function newSeason(){
   const st=standingsT(),pos=st.findIndex(t=>t.id==='P');
-  G.budget+=PRIZE[pos]*1e6;
-  G.seasonLog.push({season:G.season,champ:standingsD()[0].name,team:st[0].name,me:pos+1});
-  for(const t of G.teams){t.points=0;for(const[k]of PARTS){t.parts[k].perf=Math.round(t.parts[k].perf*.93);t.parts[k].risky=false}}
+  const prize=PRIZE[pos]*SER().prize*1e6;G.budget+=prize;
+  const mv=seasonMoves(),me=mv.find(m=>m.id==='P');let msg='';
+  G.seasonLog.push({season:G.season,series:SER().short,champ:standingsD()[0].name,team:st[0].name,me:pos+1,move:me?(me.to<me.from?'up':'down'):''});
+  for(const m of mv){const t=team(m.id);G.series[m.from].splice(G.series[m.from].indexOf(t),1);G.series[m.to].push(t);if(m.id!=='P')t.tier=m.to<m.from?R(.25,.4):R(.6,.8)}
+  if(me){G.tier=me.to;const up=me.to<me.from,pt=PT();Object.assign(pt,econ(G.tier,up?.35:.7));
+    const bonus=SERIES[G.tier].budget[0]*(up?.4:.3)*1e6;G.budget+=bonus;
+    msg=up?`Promoted to the ${SER().name}! ${money(bonus)} promotion bonus.`:`Relegated to the ${SER().name}. ${money(bonus)} parachute payment.`}
+  G.teams=G.series[G.tier];for(const k in WORLDS)delete WORLDS[k];
+  for(const t of G.series.flat()){t.points=0;for(const[k]of PARTS){t.parts[k].perf=Math.round(t.parts[k].perf*.93);t.parts[k].risky=false}}
   const left=[];
   for(const d of Object.values(G.drivers)){d.points=0;d.age++;
     const g=d.age<26?R(0,3):d.age>32?R(-3,0):R(-1,1.5);for(const k of['pace','racecraft','tyre','consistency','wet'])d[k]=clamp(Math.round(d[k]+g+R(-1,1)),35,99);
     if(d.teamId==='P'&&d.morale<20)left.push(d)}
   for(const d of left){const t=PT(),i=t.drivers.indexOf(d.id);const nd=G.drivers[G.market.shift()];t.drivers[i]=nd.id;nd.teamId='P';d.teamId=null;G.market.push(d.id);d.morale=60}
-  while(G.market.length<6){const d=mkDriver(pick(NAMES),R(.3,.85));d.num=60+G.nid;G.market.push(d.id)}
+  const nm=nameGen();while(G.market.length<6){const d=mkDriver(nm(),lerp(...SER().drv,R(.2,1)));d.num=60+G.nid;G.market.push(d.id)}
   G.season++;G.round=0;G.history=[];G.screen='hub';UI.tab='overview';save();render();
-  if(left.length)toast(`${left.map(d=>d.name).join(' and ')} quit over low morale. Replaced from the market.`);
+  const notes=[msg,left.length?`${left.map(d=>d.name).join(' and ')} quit over low morale. Replaced from the market.`:''].filter(Boolean);
+  if(notes.length)toast(notes.join(' '));
 }
 
 /* ---------- design & market ---------- */
@@ -641,8 +688,8 @@ const DESIGNS={
   grey:{n:'Grey area',cost:2.4e6,races:3,perf:[10,15],rel:[50,70],txt:'Bends the rules. Scrutineers may fine you each race.'}};
 function startDesign(kind){
   if(G.project)return;const part=UI.dpart,name=PNAME[part];
-  if(kind==='rel'){if(G.budget<.6e6)return toast('Not enough budget.');G.budget-=.6e6;G.project={part,name,kind,left:1,rel:RI(10,18),total:1}}
-  else{const D=DESIGNS[kind];if(G.budget<D.cost)return toast('Not enough budget.');G.budget-=D.cost;
+  if(kind==='rel'){const c=.6e6*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;G.project={part,name,kind,left:1,rel:RI(10,18),total:1}}
+  else{const D=DESIGNS[kind],c=D.cost*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;
     G.project={part,name,kind,left:D.races,total:D.races,perf:RI(...D.perf),rel:RI(...D.rel)}}
   save();render();toast(`Design started: ${name}. Ready in ${G.project.left} race${G.project.left>1?'s':''}.`);
 }
@@ -763,7 +810,7 @@ function topBar(page,sub){
    <div class="tb-l"><div class="tb-team">${esc(nm[0])}<small>${esc(nm.slice(1).join(' ')||'Racing')}</small></div><div class="tb-page"><b>${page}</b><span>${sub}</span></div></div>
    <div class="kpis">
     <div class="pill money"><div class="eyebrow">Balance</div><div class="v ${G.budget<0?'bad':''}">${money(G.budget)}</div></div>
-    <div class="pill"><div class="eyebrow">Teams' champ.</div><div class="v">${ord(standingsT().findIndex(x=>x.id==='P')+1)} · ${t.points} pts</div></div>
+    <div class="pill"><div class="eyebrow">${SER().short} · Tier ${G.tier+1}</div><div class="v">${ord(standingsT().findIndex(x=>x.id==='P')+1)} · ${t.points} pts</div></div>
     <div class="pill"><div class="eyebrow">Next race</div><div class="v">${G.round<TRACKS.length?esc(next.name):'Season over'}</div></div>
    </div></div>`;
 }
@@ -790,11 +837,15 @@ function renderTitle(){
    <div class="row"><button class="btn" data-act="pickteam">New career</button>${hasSave()?'<button class="ghost" data-act="continue">Continue saved career</button>':''}</div></div>`;
 }
 function renderTeamSelect(){
-  const T=previewTeams(),i=UI.pickIdx??7,t=T[i];const rank=T.slice().sort((a,b)=>b.tier-a.tier).indexOf(t)+1;const pr=pressure(t.tier);
+  const P=previewTeams(),[pl,pi]=UI.pick,T=P[pl],t=T[pi];const rank=T.slice().sort((a,b)=>b.tier-a.tier).indexOf(t)+1;const pr=pressure(t.tier);
   const col=t.id==='C'?UI.newColor:t.color;
+  const goal=pl===0?'Win the world title':rank<=2?'Win promotion':'Finish in the top half';
   app.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><div class="eyebrow">New career</div><h2>Team select</h2></div><button class="ghost" data-act="back">Back</button></div>
-  <div class="tsel"><div class="tcards">${T.map((x,k)=>`<button class="tcard ${k===i?'on':''}" style="--tc:${x.id==='C'?UI.newColor:x.color}" data-act="pickidx" data-v="${k}"><b>${esc(x.id==='C'&&UI.newName?UI.newName:x.name)}</b>${stars(x.tier)}</button>`).join('')}</div>
-   <div class="panel tdet" style="--tc:${col}"><h2>${esc(t.id==='C'&&UI.newName?UI.newName:t.name)}</h2><p class="muted" style="margin:0">${t.desc}</p>
+  <div class="segs" style="margin-bottom:12px" role="group" aria-label="Championship">${SERIES.map((s,l)=>`<button class="seg ${l===pl?'on':''}" data-act="pickser" data-v="${l}">Tier ${l+1} · ${s.name}</button>`).join('')}</div>
+  <p class="muted" style="margin:0 0 12px;max-width:72ch">${pl===2?'The bottom rung. Small budgets and slow cars. Finish in the top two to be promoted.':pl===1?'The middle tier. The top two go up to the Apex World Championship, the bottom two drop to the Frontier Series.':'The top tier. The fastest cars and biggest budgets. The bottom two are relegated.'}</p>
+  <div class="tsel"><div class="tcards">${T.map((x,k)=>`<button class="tcard ${k===pi?'on':''}" style="--tc:${x.id==='C'?UI.newColor:x.color}" data-act="pickidx" data-v="${k}"><b>${esc(x.id==='C'&&UI.newName?UI.newName:x.name)}</b>${stars(x.tier)}</button>`).join('')}</div>
+   <div class="panel tdet" style="--tc:${col}"><div class="eyebrow">Tier ${pl+1} · ${SERIES[pl].name}</div><h2>${esc(t.id==='C'&&UI.newName?UI.newName:t.name)}</h2><p class="muted" style="margin:0">${t.desc}</p>
+    <div class="kv"><div><span class="eyebrow">Board goal</span><b>${goal}</b></div><div><span class="eyebrow">Sponsor per race</span><b>${money(econ(pl,t.tier).sponsor)}</b></div></div>
     <div class="kv"><div><span class="eyebrow">Budget</span><b>${money(t.budget)}</b></div><div><span class="eyebrow">Car rating</span><b>${carAvg(t).toFixed(1)}</b></div>
      <div><span class="eyebrow">Expected finish</span><b>${ord(rank)}</b></div><div><span class="eyebrow">Pressure</span><b class="${pr[1]}">${pr[0]}</b></div></div>
     <div><div class="eyebrow" style="margin-bottom:6px">Car parts</div><div class="cbars">${PARTS.map(([k])=>`<i style="height:${t.parts[k].perf}%;background:${col}"></i>`).join('')}</div><div class="cbl">${PARTS.map(([,n])=>`<span>${n.split(' ')[0]}</span>`).join('')}</div></div>
@@ -828,7 +879,9 @@ function renderHub(){
        <div><div class="eyebrow">Key parts</div><div class="mono">${imp[0][0]}, ${imp[1][0]}</div></div>
       </div></div>
      <div class="stack">
-      <div class="panel"><div class="eyebrow">Sponsor objective</div><h3 style="margin-top:4px">Finish ${ord(sponsorTarget())} or better</h3><p class="muted" style="margin:4px 0 0">Bonus $0.60M. Base sponsorship ${money(t.sponsor)} per race.</p></div>
+      <div class="panel"><div class="eyebrow">Tier ${G.tier+1} · ${SER().name}</div><h3 style="margin-top:4px">${G.tier===0?'Avoid the bottom two to stay up':'Finish in the top two to be promoted'}</h3>
+       <p class="muted" style="margin:4px 0 0">You are ${ord(standingsT().findIndex(x=>x.id==='P')+1)} of ${G.teams.length}. ${G.tier===0?'The bottom two teams drop to the Meridian Cup.':`The top two go up to the ${SERIES[G.tier-1].name}.`}${G.tier<2?` The bottom two drop to the ${SERIES[G.tier+1].name}.`:''}</p></div>
+      <div class="panel"><div class="eyebrow">Sponsor objective</div><h3 style="margin-top:4px">Finish ${ord(sponsorTarget())} or better</h3><p class="muted" style="margin:4px 0 0">Bonus ${money(.6e6*SER().cost)}. Base sponsorship ${money(t.sponsor)} per race.</p></div>
       <div class="panel"><div class="eyebrow">Factory</div>${G.project?`<h3 style="margin-top:4px">${G.project.name}: ${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n}</h3><p class="muted" style="margin:4px 0 0">Ready in ${G.project.left} race${G.project.left>1?'s':''}.</p>`:`<h3 style="margin-top:4px">Design team idle</h3><p class="muted" style="margin:4px 0 0">Start a new part from the Car screen.</p>`}</div>
       <div class="panel"><div class="eyebrow">Calendar</div><div class="cal" style="margin-top:8px">${TRACKS.map((x,i)=>{const h=G.history.find(y=>y.round===i);return `<div class="${i===G.round?'now':i<G.round?'done':''}"><span class="eyebrow">R${i+1}</span><b>${x.name}</b>${h?`<span class="muted"><span class="chip" style="background:${h.wcolor}"></span>${esc(h.winner.split(' ')[1])}</span>`:''}</div>`}).join('')}</div></div>
      </div></div>`;
@@ -839,8 +892,8 @@ function renderHub(){
      <div class="panel stack"><h3>Design new parts</h3>
       ${G.project?`<div><div class="eyebrow">In progress</div><p style="margin:4px 0">${G.project.name} (${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n})</p><div class="bar"><i style="width:${(1-G.project.left/G.project.total)*100+8}%"></i></div><p class="muted">Ready in ${G.project.left} race${G.project.left>1?'s':''}. One project at a time.</p></div>`:`
       <div class="row"><label for="dpart" class="eyebrow">Part</label><select id="dpart" data-act="dpart">${PARTS.map(([k,n])=>`<option value="${k}" ${UI.dpart===k?'selected':''}>${n} (${t.parts[k].perf})</option>`).join('')}</select></div>
-      <div class="design">${Object.entries(DESIGNS).map(([k,D])=>`<button class="dopt" data-act="design" data-v="${k}" ${G.budget<D.cost?'disabled':''}><b>${D.n}</b><span class="mono">${money(D.cost)} · ${D.races} races</span><span class="mono good">+${D.perf[0]}–${D.perf[1]} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`).join('')}
-       <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6?'disabled':''}><b>Improve part</b><span class="mono">$0.60M · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`}
+      <div class="design">${Object.entries(DESIGNS).map(([k,D])=>`<button class="dopt" data-act="design" data-v="${k}" ${G.budget<D.cost*SER().cost?'disabled':''}><b>${D.n}</b><span class="mono">${money(D.cost*SER().cost)} · ${D.races} races</span><span class="mono good">+${D.perf[0]}–${D.perf[1]} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`).join('')}
+       <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6*SER().cost?'disabled':''}><b>Improve part</b><span class="mono">${money(.6e6*SER().cost)} · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`}
      </div></div>`;
   }else if(UI.tab==='drivers'){
     page='Drivers';sub='Your line-up and the driver market.';
@@ -850,12 +903,13 @@ function renderHub(){
      ${G.market.map(id=>{const d=drv(id);return `<tr><td>${esc(d.name)}</td><td class="mono">${d.age}</td><td class="mono"><b>${rating(d)}</b></td><td class="mono">${d.pace}</td><td class="mono">${d.racecraft}</td><td class="mono">${d.tyre}</td><td class="mono">${d.consistency}</td><td class="mono">${d.wet}</td><td class="mono">${money(d.salary)}</td>
       <td style="white-space:nowrap">${t.drivers.map((x,s)=>`<button class="ghost" data-act="sign" data-v="${id}" data-s="${s}">Replace ${drv(x).code}</button>`).join(' ')}</td></tr>`}).join('')}</table></div></div>`;
   }else{
-    page='Standings';sub='World championship tables.';
-    body=`<div class="grid2"><div class="panel"><h3>Drivers</h3><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Wins</th><th>Pts</th></tr>
-     ${standingsD().map((d,i)=>`<tr class="${d.teamId==='P'?'me':''}"><td class="mono">${i+1}</td><td>${esc(d.name)}</td><td><span class="chip" style="background:${team(d.teamId).color}"></span>${team(d.teamId).short}</td><td class="mono">${d.wins}</td><td class="mono"><b>${d.points}</b></td></tr>`).join('')}</table></div></div>
-     <div class="panel"><h3>Teams</h3><div class="scroll"><table><tr><th>Pos</th><th>Team</th><th>Car</th><th>Pts</th></tr>
-     ${standingsT().map((x,i)=>`<tr class="${x.id==='P'?'me':''}"><td class="mono">${i+1}</td><td><span class="chip" style="background:${x.color}"></span>${esc(x.name)}</td><td class="mono">${carAvg(x).toFixed(1)}</td><td class="mono"><b>${x.points}</b></td></tr>`).join('')}</table></div>
-     ${G.seasonLog.length?`<div class="eyebrow" style="margin-top:12px">Past seasons</div>${G.seasonLog.map(s=>`<div class="mono" style="font-size:12px">S${s.season}: ${esc(s.champ)} / ${esc(s.team)} · you ${ord(s.me)}</div>`).join('')}`:''}</div></div>`;
+    const sl=UI.stSer??G.tier;
+    page='Standings';sub='Championship tables for all three tiers.';
+    body=`<div class="segs" style="margin-bottom:12px" role="group" aria-label="Championship">${SERIES.map((s,l)=>`<button class="seg ${l===sl?'on':''}" data-act="stser" data-v="${l}">Tier ${l+1} · ${s.short}${l===G.tier?' (you)':''}</button>`).join('')}</div>
+     <div class="grid2"><div class="panel"><h3>${SERIES[sl].name}: drivers</h3><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Career wins</th><th>Pts</th></tr>
+     ${standingsD(sl).map((d,i)=>`<tr class="${d.teamId==='P'?'me':''}"><td class="mono">${i+1}</td><td>${esc(d.name)}</td><td><span class="chip" style="background:${team(d.teamId).color}"></span>${team(d.teamId).short}</td><td class="mono">${d.wins}</td><td class="mono"><b>${d.points}</b></td></tr>`).join('')}</table></div></div>
+     <div class="panel"><h3>${SERIES[sl].name}: teams</h3><div class="scroll">${teamTable(sl)}</div>
+     ${G.seasonLog.length?`<div class="eyebrow" style="margin-top:12px">Past seasons</div>${G.seasonLog.map(s=>`<div class="mono" style="font-size:12px">S${s.season} ${esc(s.series||'')}: ${esc(s.champ)} / ${esc(s.team)} · you ${ord(s.me)}${s.move==='up'?' <span class="good">▲ promoted</span>':s.move==='down'?' <span class="bad">▼ relegated</span>':''}</div>`).join('')}`:''}</div></div>`;
   }
   app.innerHTML=topBar(page,sub)+body+bottomNav();
   const mc=$('#mini');if(mc){const r=mc.getBoundingClientRect(),dpr=devicePixelRatio||1;mc.width=r.width*dpr;mc.height=r.height*dpr;const c=mc.getContext('2d');drawOutline(c,G.round,mc.width,mc.height,16*dpr,14*dpr,'#3a6273');drawOutline(c,G.round,mc.width,mc.height,16*dpr,9*dpr,'#1f2d36')}
@@ -1093,13 +1147,22 @@ function renderResults(){
     <div class="muted" style="font-size:12px">${PT().drivers.map(id=>`${drv(id).name}: morale ${drv(id).morale}`).join(' · ')}</div>
     <button class="btn" data-act="next" ${L.answered==null?'disabled':''}>${G.round>=TRACKS.length?'Season review ›':'Continue ›'}</button></div></div></div>`;
 }
+// teams table with promotion (green) and relegation (red) zones marked
+function teamTable(l){
+  const st=standingsT(l),n=st.length;
+  return `<table><tr><th>Pos</th><th>Team</th><th>Car</th><th>Pts</th><th></th></tr>${st.map((x,i)=>{const up=l>0&&i<2,dn=l<2&&i>=n-2;
+    return `<tr class="${x.id==='P'?'me':''}"><td class="mono" style="border-left:3px solid ${up?'var(--good)':dn?'var(--bad)':'transparent'}">${i+1}</td><td><span class="chip" style="background:${x.color}"></span>${esc(x.name)}</td><td class="mono">${carAvg(x).toFixed(1)}</td><td class="mono"><b>${x.points}</b></td><td class="mono" style="font-size:11px">${up?'<span class="good">▲ up</span>':dn?'<span class="bad">▼ down</span>':''}</td></tr>`}).join('')}</table>`;
+}
 function renderSeason(){
   const sd=standingsD(),st=standingsT(),pos=st.findIndex(t=>t.id==='P');
-  app.innerHTML=topBar('Season review',`Season ${G.season} complete`)+`<h1 style="font-size:clamp(36px,6vw,64px);margin:8px 0 16px">${esc(sd[0].name)} is champion</h1>
-   <div class="grid2"><div class="panel"><h3>Final teams' standings</h3><table>${st.map((t,i)=>`<tr class="${t.id==='P'?'me':''}"><td class="mono">${i+1}</td><td><span class="chip" style="background:${t.color}"></span>${esc(t.name)}</td><td class="mono"><b>${t.points}</b></td></tr>`).join('')}</table></div>
-   <div class="panel stack"><h3>Your season</h3><p style="margin:0">You finished <b>${ord(pos+1)}</b> in the teams' championship, earning ${money(PRIZE[pos]*1e6)} in end-of-season prize money.</p>
-   <p class="muted" style="margin:0">New regulations next season reduce every team's part performance by 7%. Drivers age: young ones improve, veterans fade. Grey-area parts become legal. A driver with morale under 20 will quit.</p>
-   <button class="btn" data-act="season">Start season ${G.season+1} ›</button></div></div>`;
+  const me=seasonMoves().find(m=>m.id==='P'),up=me&&me.to<me.from;
+  const headline=me?(up?`Promoted to the ${SERIES[me.to].name}!`:`Relegated to the ${SERIES[me.to].name}`):`${esc(sd[0].name)} is ${SER().short} champion`;
+  app.innerHTML=topBar('Season review',`Season ${G.season} complete`)+`<h1 style="font-size:clamp(36px,6vw,64px);margin:8px 0 16px" class="${me?(up?'good':'bad'):''}">${headline}</h1>
+   <div class="grid2"><div class="panel stack"><h3>Your season</h3><p style="margin:0">You finished <b>${ord(pos+1)}</b> in the ${SER().name}, earning ${money(PRIZE[pos]*SER().prize*1e6)} in end-of-season prize money.</p>
+    ${me?`<p style="margin:0">${up?`Next season you race in tier ${me.to+1}. Expect to be near the back at first: the cars there are much faster, but the budgets and sponsors are bigger. You get a promotion bonus of ${money(SERIES[me.to].budget[0]*.4e6)}.`:`Next season you race in tier ${me.to+1}, with smaller budgets and slower rivals. You get a parachute payment of ${money(SERIES[me.to].budget[0]*.3e6)}.`}</p>`:''}
+    <p class="muted" style="margin:0">New regulations next season reduce every team's part performance by 7%. Drivers age: young ones improve, veterans fade. Grey-area parts become legal. A driver with morale under 20 will quit.</p>
+    <button class="btn" data-act="season">Start season ${G.season+1} ›</button></div>
+   ${SERIES.map((s,l)=>`<div class="panel"><h3>Tier ${l+1} · ${s.name}</h3><p class="muted" style="margin:2px 0 8px">Champion: ${esc(standingsD(l)[0].name)}</p><div class="scroll">${teamTable(l)}</div></div>`).join('')}</div>`;
 }
 
 /* ---------- input ---------- */
@@ -1109,11 +1172,13 @@ document.addEventListener('click',e=>{
   const a=el.dataset.act,v=el.dataset.v;
   const pc=()=>RS.mineCars[+el.dataset.c];
   switch(a){
-    case 'pickteam':UI.picking=true;UI.pickIdx=7;UI.preview=null;render();break;
+    case 'pickteam':UI.picking=true;UI.pick=[2,7];UI.preview=null;render();break;
     case 'back':UI.picking=false;render();break;
-    case 'pickidx':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.pickIdx=+v;render();break}
+    case 'pickser':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.pick=[+v,+v===2?7:0];render();break}
+    case 'pickidx':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.pick=[UI.pick[0],+v];render();break}
     case 'color':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.newColor=v;render();break}
-    case 'new':{const n=$('#tname');if(n)UI.newName=n.value.trim();newGame(UI.pickIdx??7,UI.newName,UI.newColor);UI.picking=false;UI.tab='overview';render();break}
+    case 'new':{const n=$('#tname');if(n)UI.newName=n.value.trim();newGame(UI.pick,UI.newName,UI.newColor);UI.picking=false;UI.tab='overview';UI.stSer=null;render();break}
+    case 'stser':UI.stSer=+v;render();break;
     case 'continue':loadSave();if(G.screen==='weekend'&&W&&W.phase==='race'){RS=null;W.phase='quali'}render();break;
     case 'quit':G=null;W=null;RS=null;render();break;
     case 'tab':UI.tab=v;render();break;
