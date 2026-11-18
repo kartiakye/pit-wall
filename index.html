@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pit Wall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: management screens with a fixed bottom nav; race = full-bleed follow camera with overlaid standings, track map, driver panels and transport controls. Deliberately dark single theme. */
+:root{
+  color-scheme:dark;
+  --bg:#0b151c; --panel:#11202a; --panel2:#172a35; --glass:rgba(10,20,27,.88); --line:#22404f; --fg:#e3ecf0; --muted:#86a0ae;
+  --accent:#56cfe1; --go:#f0a330; --purple:#b77cff; --good:#3ddc84; --warn:#ffb547; --bad:#ff5d5d;
+  --f-display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --f-body:'Inter',system-ui,-apple-system,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:14px;line-height:1.45}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+#app{max-width:1360px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body.hasnav #app{padding-bottom:110px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:clamp(44px,8vw,88px);line-height:.9;text-transform:uppercase}
+h2{font-size:28px;text-transform:uppercase}
+h3{font-size:20px;text-transform:uppercase}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.purple{color:var(--purple)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--go);color:#1d1100;border:0;border-radius:3px;padding:10px 20px;font-family:var(--f-display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+.btn:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 12px;color:var(--fg)}
+.ghost:hover{border-color:var(--accent)}
+.ghost[disabled]{opacity:.4;cursor:not-allowed}
+.seg{background:var(--panel2);border:1px solid var(--line);padding:6px 10px;font-size:12px;border-radius:2px;color:var(--muted)}
+.seg.on{background:var(--accent);color:#04161c;border-color:var(--accent);font-weight:600}
+.segs{display:flex;flex-wrap:wrap;gap:3px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;min-width:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.bar{height:6px;background:var(--panel2);border-radius:2px;overflow:hidden;position:relative}
+.bar>i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:400;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+tr.me td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.scroll{overflow-x:auto}
+.chip{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.stars{color:var(--go);letter-spacing:2px;font-size:13px}.stars s{color:#3a5260;text-decoration:none}
+/* top bar */
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}
+.tb-l{display:flex;gap:16px;align-items:center}
+.tb-team{font-family:var(--f-display);font-weight:700;font-size:24px;text-transform:uppercase;line-height:.95;color:var(--team);padding-right:16px;border-right:1px solid var(--line)}
+.tb-team small{display:block;font-size:13px;letter-spacing:.2em;color:var(--fg);opacity:.7}
+.tb-page b{font-family:var(--f-display);font-size:20px;text-transform:uppercase;display:block;line-height:1}
+.tb-page span{font-size:12px;color:var(--muted)}
+.kpis{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 12px}
+.pill .v{font-family:var(--f-mono);font-size:15px;font-weight:600}
+.pill.money{border-color:color-mix(in srgb,var(--good) 55%,transparent)}
+/* bottom nav */
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:15;background:#d9e1e5;color:#20343f;padding-bottom:env(safe-area-inset-bottom,0px)}
+.bnav-in{max-width:1360px;margin:0 auto;display:flex;align-items:stretch;padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.bnav .nt{background:none;border:0;border-right:1px solid #bfcad0;padding:10px 14px;font-size:12px;font-weight:600;color:#3d5664;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:72px}
+.bnav .nt svg{width:18px;height:18px}
+.bnav .nt.on{background:#3d8ea3;color:#fff}
+.bnav .sp{flex:1}
+.bnav .date{background:#3d8ea3;color:#fff;padding:6px 14px;font-size:12px;text-align:center;display:flex;flex-direction:column;justify-content:center;font-weight:600}
+.bnav .cont{background:var(--go);color:#1d1100;border:0;font-family:var(--f-display);font-weight:700;font-size:20px;text-transform:uppercase;padding:0 28px;min-width:180px}
+@media (max-width:720px){.bnav .nt{min-width:0;padding:8px 8px;font-size:10px}.bnav .date{display:none}.bnav .cont{min-width:0;padding:0 14px;font-size:16px}}
+/* title + team select */
+.title{min-height:80vh;display:grid;align-content:center;gap:24px;max-width:760px}
+.title p{max-width:60ch;color:var(--muted);font-size:16px}
+.tsel{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
+@media (max-width:900px){.tsel{grid-template-columns:1fr}}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-content:start}
+.tcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:14px 12px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:92px}
+.tcard b{font-family:var(--f-display);font-size:20px;line-height:1;text-transform:uppercase;font-style:italic;color:var(--tc)}
+.tcard.on{border-color:var(--fg);background:var(--panel2)}
+.tdet{display:flex;flex-direction:column;gap:14px}
+.tdet h2{color:var(--tc);font-style:italic}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv div{background:var(--panel2);padding:8px 10px;border-radius:3px}
+.kv b{font-family:var(--f-mono);display:block;font-size:16px}
+.cbars{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:120px;border-bottom:1px solid var(--line)}
+.cbars i{display:block;background:var(--good);border-radius:2px 2px 0 0}
+.cbl{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:10px;color:var(--muted);text-align:center;font-family:var(--f-mono)}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent}
+.sw.on{border-color:var(--fg)}
+input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--fg);padding:9px 12px;border-radius:3px;font:inherit;font-size:16px;width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.cal div{border:1px solid var(--line);border-radius:3px;padding:8px;font-size:12px;min-width:0}
+.cal div.now{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.cal div.done{opacity:.55}
+.cal b{display:block;font-family:var(--f-display);font-size:15px;text-transform:uppercase;line-height:1.1}
+/* part fitting */
+.fit{display:grid;grid-template-columns:1fr 150px 1fr;gap:10px;align-items:center}
+.fit .carsvg{grid-column:2;grid-row:1/span 3;width:100%;height:auto;opacity:.75}
+.pcard2{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.pcard2 .ph{display:flex;justify-content:space-between;font-size:10px;font-family:var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pcard2 .ph.risky{color:var(--warn)}
+.pcard2 b{font-size:14px}
+.pcard2 .bar{height:5px}
+@media (max-width:560px){.fit{grid-template-columns:1fr 1fr}.fit .carsvg{display:none}}
+.imp{letter-spacing:1px;color:var(--warn);font-size:10px}
+.design{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px}
+.dopt{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.dopt:hover{border-color:var(--accent)}
+.dopt b{font-family:var(--f-display);font-size:18px;text-transform:uppercase}
+.dopt[disabled]{opacity:.4;cursor:not-allowed}
+select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:3px;padding:8px;font:inherit}
+/* drivers */
+.dcard{display:flex;flex-direction:column;gap:10px}
+.dhead{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.dnum{font-family:var(--f-display);font-size:40px;font-weight:700;line-height:1;color:var(--team,var(--accent))}
+.stat{display:grid;grid-template-columns:96px 1fr 30px;gap:8px;align-items:center;font-size:12px}
+/* weekend */
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.steps span{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+.steps span.on{border-color:var(--accent);color:var(--accent)}
+.slider{display:grid;gap:4px}
+.slider .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.fb{font-size:12px;padding:6px 8px;border-radius:3px;background:var(--panel2)}
+.wxrow{display:flex;gap:3px;flex-wrap:wrap}
+.wxrow i{display:block;width:12px;height:20px;border-radius:2px;background:var(--panel2);position:relative;overflow:hidden}
+.wxrow i b{position:absolute;left:0;right:0;bottom:0;background:#3d8bff}
+.tbtn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:3px solid var(--c);font-family:var(--f-mono);font-weight:600;font-size:12px;color:var(--fg)}
+.tbtn.on{background:var(--c);color:#0b151c}
+.tbtn.keep{width:auto;border-radius:16px;padding:0 10px;border-color:var(--line);font-size:11px}
+.tbtn.keep.on{background:var(--fg)}
+.boxrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+/* tyre ring */
+.tring{--w:100;width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;background:conic-gradient(var(--c) calc(var(--w)*1%),#2a3a44 0);flex:none}
+.tring b{width:13px;height:13px;border-radius:50%;background:#0d1a22;display:grid;place-items:center;font-family:var(--f-mono);font-size:8px;font-weight:600;color:var(--fg)}
+/* race view */
+.rv{position:relative}
+.stage{position:relative;height:clamp(560px,80vh,820px);border-radius:4px;overflow:hidden;background:#24361f;border:1px solid var(--line);user-select:none;-webkit-user-select:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+.rtop{position:absolute;top:0;right:0;display:flex;gap:2px;z-index:3}
+.rtop>div{background:var(--glass);padding:6px 14px;min-width:120px}
+.rtop .eyebrow{font-size:9px}
+.rtop .bar{height:4px;margin-top:4px;width:110px}
+.rtop .wxi{font-size:20px;line-height:1;min-width:0}
+.mini{position:absolute;right:10px;top:54px;width:210px;height:160px;z-index:3;pointer-events:none}
+.stand{position:absolute;left:0;top:0;width:262px;max-height:calc(100% - 158px);overflow:auto;background:var(--glass);z-index:4;font-size:12px}
+.stand .sh{display:flex;justify-content:space-between;padding:6px 10px;background:#24414d;font-weight:600;font-size:12px}
+.srow{display:grid;grid-template-columns:22px 4px 1fr 12px 22px 26px 46px;gap:6px;align-items:center;padding:3px 10px 3px 6px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font-size:12px}
+.srow:nth-child(odd){background:rgba(255,255,255,.025)}
+.srow:hover{background:rgba(86,207,225,.12)}
+.srow.me{background:rgba(86,207,225,.16)}
+.srow.sel{outline:1px solid var(--accent);outline-offset:-1px}
+.srow.out{opacity:.45}
+.srow .c{height:14px}
+.srow .g{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.srow .ar{font-size:9px}
+.tag{font-family:var(--f-mono);font-size:9px;padding:1px 4px;border-radius:2px;background:#53636c;color:#fff}
+.tag.pit{background:#2b6f80}.tag.out{background:#a33b3b}
+.lbl{position:absolute;left:0;top:0;z-index:2;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start;transform:translate(-9999px,0)}
+.lbl .box{display:flex;align-items:stretch;background:var(--glass);font-size:15px;white-space:nowrap}
+.lbl .pos{background:var(--tc);color:#08131a;font-family:var(--f-display);font-weight:700;font-size:20px;padding:0 10px;display:flex;align-items:center}
+.lbl .nm{padding:4px 10px;display:flex;flex-direction:column;justify-content:center}
+.lbl .nm b{font-family:var(--f-display);font-size:20px;line-height:1;text-transform:uppercase}
+.lbl .nm small{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.lbl .ty{padding:4px 10px;display:flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:11px;color:var(--good)}
+.lbl .stem{width:1px;height:46px;background:rgba(255,255,255,.55);margin-left:14px}
+.ntag{position:absolute;left:0;top:0;z-index:2;pointer-events:none;background:var(--glass);border-left:3px solid var(--tc);padding:2px 8px;font-family:var(--f-display);font-size:16px;font-weight:600;transform:translate(-9999px,0)}
+.comm{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);z-index:3;background:rgba(200,214,220,.18);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);padding:5px 16px;font-size:13px;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:2px}
+.ctr{position:absolute;left:50%;bottom:0;transform:translateX(-50%);z-index:4;display:flex;align-items:stretch;background:var(--glass);height:62px}
+.ctr .cam{display:flex;gap:2px;padding:8px}
+.ctr .cam button{width:46px;background:var(--panel2);border:0;border-radius:2px;color:var(--muted);font-size:10px;font-weight:600}
+.ctr .cam button.on{background:#3d8ea3;color:#fff}
+.ctr .lap{padding:6px 14px;display:flex;flex-direction:column;justify-content:center;min-width:118px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.ctr .lap b{font-family:var(--f-display);font-size:28px;line-height:1;font-weight:600}
+.ctr .lap .bar{height:3px;margin-top:5px}
+.ctr .spd{display:flex}
+.ctr .spd button{width:42px;background:none;border:0;border-right:1px solid var(--line);color:var(--muted);font-family:var(--f-display);font-size:18px;font-weight:600}
+.ctr .spd button.on{background:#3d8ea3;color:#fff}
+.ctr .spd button.end{width:auto;padding:0 12px;font-size:14px}
+.scb{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:3;background:var(--warn);color:#1b1200;font-family:var(--f-display);font-weight:700;font-size:20px;text-transform:uppercase;padding:4px 14px;border-radius:2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){.scb{animation:none}}
+.over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(11,21,28,.6);z-index:6}
+/* driver panels */
+.pan{position:absolute;bottom:0;width:clamp(300px,26%,370px);z-index:5;display:flex;flex-direction:column}
+.pan.l{left:0}.pan.r{right:0}
+.pan .gaps{display:flex;align-items:center;gap:8px;background:var(--glass);padding:4px 10px;font-family:var(--f-mono);font-size:13px;align-self:stretch}
+.pan .gaps .pc{width:20px;text-align:center;border-left:3px solid var(--tc,#888);font-weight:600}
+.pan .gaps .ln{flex:1;height:1px;background:var(--line);position:relative}
+.pan .tabs3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;background:var(--glass);padding:4px}
+.pan .tabs3 button{background:#2b3f4a;border:0;padding:7px;font-size:12px;font-weight:600;color:var(--fg);border-radius:2px}
+.pan .tabs3 button.pit{background:#3d8ea3}
+.pan .tabs3 button.on{outline:2px solid var(--fg);outline-offset:-2px}
+.pan .tabs3 button.boxing{background:var(--warn);color:#1b1200}
+.pan .main{display:grid;grid-template-columns:minmax(0,1fr) auto 70px 64px;gap:10px;align-items:center;background:#18303a;padding:8px 10px;border-top:3px solid var(--tc)}
+.pan .who b{font-family:var(--f-display);font-size:30px;line-height:.9;display:block}
+.pan .who span{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pan .sec{font-family:var(--f-mono);font-size:11px;display:grid;grid-template-columns:auto auto;gap:2px 8px;align-items:center}
+.pan .sec label{color:var(--muted);font-size:10px}
+.gauge{--w:100;--c:#ffd23f;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--w)*1%),#2a3a44 0);display:grid;place-items:center;position:relative}
+.gauge>div{width:42px;height:42px;border-radius:50%;background:#18303a;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:14px;line-height:1}
+.gauge small{position:absolute;bottom:-3px;right:-6px;font-family:var(--f-mono);font-size:10px;background:#18303a;padding:0 2px}
+.fuel{display:grid;grid-template-columns:1fr 8px;gap:6px;align-items:end}
+.fuel label{font-size:10px;font-family:var(--f-mono);color:var(--muted);display:block}
+.fuel b{font-family:var(--f-mono);font-size:12px;display:block}
+.fuel small{font-family:var(--f-mono);font-size:10px}
+.fuel .fb2{height:46px;background:#2a3a44;position:relative;border-radius:1px}
+.fuel .fb2 i{position:absolute;left:0;right:0;bottom:0;background:var(--go)}
+.pop{position:absolute;bottom:100%;left:0;right:0;background:var(--glass);border:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;max-height:380px;overflow:auto}
+.pop h4{margin:0;font-family:var(--f-display);font-size:16px;text-transform:uppercase;font-weight:700}
+.pop .lab{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.prow{display:grid;grid-template-columns:90px 1fr 38px;gap:8px;align-items:center;font-size:12px}
+.eng{font-size:12px;color:var(--muted);border-left:2px solid var(--accent);padding-left:8px}
+.chk{display:flex;gap:6px;align-items:center;font-size:12px}
+.boxbtn{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:8px 14px;font-family:var(--f-display);font-weight:700;font-size:17px;text-transform:uppercase}
+.boxbtn.on{background:var(--warn);color:#1b1200;border-color:var(--warn)}
+.feed{font-family:var(--f-mono);font-size:12px;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto}
+.feed div{color:var(--muted)}.feed div.me{color:var(--fg)}.feed div.hot{color:var(--warn)}
+.racelog{margin-top:12px}
+@media (max-width:1200px){
+  .rv{display:flex;flex-direction:column;gap:10px}
+  .stage{height:clamp(320px,58vh,520px)}
+  .stand,.pan,.ctr,.pop{position:static;width:auto;max-height:none;transform:none}
+  .ctr{order:2;flex-wrap:wrap;height:auto}
+  .ctr .lap{flex:1}
+  .pan{order:3}
+  .stand{order:5}
+  .comm{bottom:10px;max-width:90%}
+  .mini{width:150px;height:115px}
+  .rtop>div{min-width:0;padding:5px 8px}.rtop .bar{width:70px}
+}
+@media (max-width:520px){.rtop .grip{display:none}.ctr .spd button{width:44px}.pan .main{grid-template-columns:minmax(0,1fr) 58px 64px}.pan .sec{display:none}}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);padding:10px 16px;border-radius:3px;z-index:20;max-width:calc(100% - 32px)}
+.qa{display:flex;flex-direction:column;gap:8px}
+.qa button{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
+.qa button:hover{border-color:var(--accent)}
+</style>
+
+<div id="app"></div>
+
+<script>
+'use strict';
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const R=(a,b)=>a+Math.random()*(b-a);
+const RI=(a,b)=>Math.floor(R(a,b+1));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const money=m=>(m<0?'−':'')+'$'+(Math.abs(m)/1e6).toFixed(2)+'M';
+const fmtT=s=>{if(s==null||!isFinite(s))return '—';const m=Math.floor(s/60);return m+':'+(s-m*60).toFixed(3).padStart(6,'0')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ord=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
+const sgn=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(3);
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- static data ---------- */
+const PARTS=[['frontWing','Front wing'],['brakes','Brakes'],['engine','Engine'],['suspension','Suspension'],['rearWing','Rear wing'],['gearbox','Gearbox']];
+const PNAME=Object.fromEntries(PARTS);
+const FAIL={engine:'engine failure',gearbox:'gearbox failure',brakes:'brake failure',suspension:'suspension failure',frontWing:'front wing failure',rearWing:'rear wing failure'};
+const TYRES={
+  soft:  {n:'Soft',k:'S',delta:-1.0,wear:6.4,cat:'dry',col:'#ff4b4b'},
+  medium:{n:'Medium',k:'M',delta:-0.4,wear:4.5,cat:'dry',col:'#ffd23f'},
+  hard:  {n:'Hard',k:'H',delta:0,wear:3.1,cat:'dry',col:'#eef1f3'},
+  inter: {n:'Intermediate',k:'I',delta:0,wear:3.0,cat:'inter',col:'#3ddc84'},
+  wet:   {n:'Wet',k:'W',delta:0,wear:2.4,cat:'wet',col:'#3d8bff'}};
+const TK=Object.keys(TYRES);
+const POINTS=[25,18,15,12,10,8,6,4,2,1];
+const PL=.05; // pit lane length in laps
+const wts=(e,g,b,s,f,r)=>{const t=e+g+b+s+f+r;return{engine:e/t,gearbox:g/t,brakes:b/t,suspension:s/t,frontWing:f/t,rearWing:r/t}};
+// theme: forest | city | desert | coast ; sea side for coast; pitSide +1/-1
+const TRACKS=[
+ {name:'Kessel Ring',code:'KSR',laps:22,base:86,pit:21,w:wts(3,2,1.5,1.5,1,1),rain:.35,abr:1.0,ovt:1.0,opt:[40,62,48],theme:'forest',ps:1,pts:[[10,50],[20,20],[50,12],[80,18],[90,40],[75,55],[85,75],[60,88],[35,80],[25,65]]},
+ {name:'Porto Azul',code:'PAZ',laps:26,base:74,pit:19,w:wts(1,1.5,2.5,2.5,2,1.5),rain:.15,abr:.85,ovt:.55,opt:[78,30,60],theme:'coast',sea:'S',ps:1,pts:[[10,20],[60,15],[65,35],[90,40],[88,80],[55,85],[50,60],[20,70]]},
+ {name:'Sable Dunes',code:'SAB',laps:20,base:92,pit:22,w:wts(3.5,2.5,1,1,1,1),rain:.03,abr:1.3,ovt:1.25,opt:[22,80,40],theme:'desert',ps:1,pts:[[15,30],[85,25],[92,50],[80,75],[50,70],[20,80],[8,55]]},
+ {name:'Highmoor',code:'HGM',laps:22,base:89,pit:20,w:wts(1.5,1,1.5,2,2.5,2.5),rain:.55,abr:1.05,ovt:.9,opt:[66,48,70],theme:'forest',ps:-1,pts:[[20,15],[70,10],[85,30],[60,45],[85,65],[70,90],[30,85],[15,60],[35,40]]},
+ {name:'Lakeshore Park',code:'LKP',laps:24,base:82,pit:20,w:wts(2,1.5,2,1.5,1.5,1.5),rain:.3,abr:.95,ovt:1.0,opt:[50,55,52],theme:'coast',sea:'N',ps:1,pts:[[10,40],[30,15],[55,25],[70,10],[92,30],[80,60],[90,85],[50,80],[30,90],[15,70]]},
+ {name:'Monte Coral',code:'MCO',laps:28,base:71,pit:18,w:wts(.8,1.2,2.5,3,2.2,1.8),rain:.2,abr:.8,ovt:.4,opt:[88,20,35],theme:'coast',sea:'E',ps:1,pts:[[30,10],[70,15],[75,40],[55,50],[70,70],[60,90],[25,85],[35,60],[15,40]]},
+ {name:'Northfield',code:'NFD',laps:22,base:87,pit:21,w:wts(2.5,2,2,1,1.2,1.3),rain:.45,abr:1.15,ovt:1.15,opt:[35,70,58],theme:'city',ps:1,pts:[[10,50],[15,15],[90,15],[90,40],[60,45],[60,60],[90,65],[85,90],[15,85]]},
+ {name:'Valle Rossa',code:'VRS',laps:24,base:84,pit:21,w:wts(2,1.5,1.5,2,2,2),rain:.25,abr:1.1,ovt:.95,opt:[58,45,64],theme:'forest',ps:1,pts:[[12,30],[40,10],[88,20],[80,45],[55,40],[45,60],[85,75],[70,92],[20,80]]},
+];
+TRACKS.forEach(t=>t.cap=Math.ceil(t.laps*.62)+1);
+const TEAM_DEFS=[
+ ['H','Halvorsen Racing','HAL','#d64545',.95,'The benchmark. A deep budget and a title-winning car, but the board accepts nothing less than wins.'],
+ ['A','Aurelia Motorsport','AUR','#e0b23b',.88,'Smooth operators with a sharp aero department. They expect podiums every weekend.'],
+ ['K','Kestrel Dynamics','KES','#4aa8ff',.8,'Ambitious engineers who out-develop richer rivals. Points every race is the minimum.'],
+ ['B','Brannigan Works','BRA','#3cb371',.72,'A family-run works team with a loyal sponsor and a strong engine shop.'],
+ ['V','Vostok Autosport','VOS','#c9d1d9',.65,'Well funded and impatient. Quick in a straight line, fragile everywhere else.'],
+ ['M','Marisol Racing','MAR','#e05fbf',.6,'A young outfit with a talented design office and very little money.'],
+ ['T','Tidewater GP','TID','#2fc5b5',.55,'Coastal privateers who live race to race. Survival is the goal; anything more is a bonus.'],
+ ['C','Corsa Vale Racing','COR','#ff8c3a',.47,'A new team at the back of the grid. Nothing to lose and a long way to climb. You can rename it.']];
+const NAMES=['Teo Marchetti','Lukas Brandt','Aiko Tanabe','Rafael Ortega','Sam Whitlock','Niko Halonen','Ines Duarte','Jonah Reyes','Clara Weiss','Oskar Lind','Priya Nair','Felix Moreau','Dmitri Sorokin','Yusuf Kaya','Hugo Lemaire','Elias Brennan','Kai Morimoto','Leo Castellan','Mila Novak','Arjun Mehta','Tomas Ekholm','Zara Okafor','Bruno Salvi','Freya Holm','Marco Vidal','Ren Ashby'];
+const COLORS=['#ff8c3a','#9b7bff','#ff5fa2','#c8e64a','#38b6ff','#f2f2f2'];
+const QUESTIONS=[
+ {q:'A difficult afternoon. What went wrong out there?',a:[['We will learn from it and come back stronger.',{both:3}],['The car simply is not quick enough yet.',{both:1}],['The drivers made mistakes we cannot afford.',{both:-6}]]},
+ {q:'Your drivers were close on track today. Is there a clear number one?',a:[['They race on equal terms.',{both:3}],['{best} has earned the lead role.',{best:6,other:-7}],['Ask me again after the season.',{}]]},
+ {q:'Rumours say a rival team wants one of your drivers. Any worries?',a:[['They are committed to this project.',{both:4}],['Everyone has a price in this paddock.',{both:-5}],['No comment.',{}]]},
+ {q:'The factory has been working overtime. When do the upgrades arrive?',a:[['Soon. We have parts in the pipeline.',{both:3}],['We need patience.',{}],['Our budget is the limit, not our people.',{both:-2}]]},
+ {q:'How do you rate the strategy calls today?',a:[['The pit wall did a great job.',{both:2}],['We will review the data tonight.',{}],['The drivers did not execute the plan.',{both:-5}]]},
+ {q:'{best} looked fast today. Is a podium realistic this season?',a:[['Absolutely, that is the target.',{best:5,other:1}],['One step at a time.',{both:1}],['Podiums are for the big budgets.',{both:-4}]]}];
+
+/* ---------- state ---------- */
+let G=null,W=null,RS=null;
+const UI={tab:'overview',raf:0,lastUi:0,last:0,newColor:'#ff8c3a',toastT:0,dpart:'engine',sel:7,cam:{mode:'follow',x:0,y:0,k:0},pop:[null,null],sp:{}};
+const SAVE='pitwall-save-v2';
+function save(){try{localStorage.setItem(SAVE,JSON.stringify({G,W}))}catch(e){}}
+function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return !!(s&&s.G)}catch(e){return false}}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;return true}}catch(e){}return false}
+
+const team=id=>G.teams.find(t=>t.id===id);
+const drv=id=>G.drivers[id];
+const PT=()=>team('P');
+const track=()=>TRACKS[G.round];
+const rating=d=>Math.round(d.pace*.4+d.racecraft*.15+d.tyre*.15+d.consistency*.15+d.wet*.15);
+const stars=t=>{const n=clamp(Math.round(t*5),1,5);return `<span class="stars">${'★'.repeat(n)}<s>${'★'.repeat(5-n)}</s></span>`};
+const pressure=t=>t>.85?['High','bad']:t>.65?['Medium','warn']:['Low','good'];
+
+function mkDriver(name,tier){
+  const id='d'+(G.nid++);const s=v=>clamp(Math.round(v+R(-7,7)),35,99);
+  const d={id,name,code:name.split(' ')[1].slice(0,3).toUpperCase(),num:0,age:RI(19,35),
+    pace:s(56+tier*32),racecraft:s(52+tier*34),tyre:s(50+tier*34),consistency:s(52+tier*34),wet:s(48+tier*36),
+    morale:RI(55,75),points:0,wins:0,podiums:0,teamId:null};
+  d.salary=Math.round((0.6+Math.pow(rating(d)/100,3)*6)*10)/10*1e6;
+  G.drivers[id]=d;return d;
+}
+function mkParts(tier){const p={};for(const[k]of PARTS)p[k]={perf:Math.round(48+tier*34+R(-4,4)),rel:Math.round(58+tier*28+R(-5,5)),risky:false};return p}
+// preview teams for the team-select screen (generated once, kept for the new game)
+function previewTeams(){
+  if(UI.preview)return UI.preview;
+  UI.preview=TEAM_DEFS.map(([id,n,short,col,tier,desc])=>({id,name:n,short,color:col,tier,desc,parts:mkParts(tier),budget:Math.round(4+tier*14)*1e6}));
+  return UI.preview;
+}
+function newGame(pickIdx,customName,customColor){
+  G={season:1,round:0,budget:0,nid:1,teams:[],drivers:{},market:[],project:null,screen:'hub',last:null,history:[],seasonLog:[]};
+  const names=NAMES.slice().sort(()=>Math.random()-.5);let ni=0,num=2;
+  previewTeams().forEach((pv,i)=>{
+    const mine=i===pickIdx;
+    const t={id:mine?'P':pv.id,name:pv.name,short:pv.short,color:pv.color,tier:pv.tier,parts:pv.parts,drivers:[],points:0,
+      sponsor:(1.0+pv.tier*1.6)*1e6,running:(.5+pv.tier*.5)*1e6};
+    if(mine&&pv.id==='C'){t.name=customName||pv.name;t.color=customColor||pv.color;t.short=(t.name.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase())||'COR'}
+    if(mine)G.budget=pv.budget;
+    for(let k=0;k<2;k++){const d=mkDriver(names[ni++],clamp(pv.tier+R(-.1,.06),.25,1));d.teamId=t.id;d.num=num++;t.drivers.push(d.id)}
+    G.teams.push(t);
+  });
+  for(let k=0;k<6;k++){const d=mkDriver(names[ni++],R(.3,.85));d.num=num++;G.market.push(d.id)}
+  UI.preview=null;save();
+}
+
+/* ---------- car model ---------- */
+function carScore(t,tr){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf*tr.w[k];return s}
+function carAvg(t){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf;return s/PARTS.length}
+function weatherPen(c,w){const cat=TYRES[c].cat;
+  if(cat==='dry')return w*9;
+  if(cat==='inter')return w<.2?2.4+(.2-w)*5:(w>.75?(w-.75)*8:0);
+  return w<.6?2.8+(.6-w)*6:0}
+function weatherWear(c,w){const cat=TYRES[c].cat;if(cat==='dry')return w>.3?.7:1;if(cat==='inter')return w<.2?2.5:1;return w<.5?3:1}
+function wearPen(x){return Math.pow(x/100,2)*2.4+(x>80?(x-80)*.18:0)}
+function wearRate(car,c,w,tr){return TYRES[c].wear*[.7,1,1.35][car.mode]*(1.2-car.d.tyre/100*.4)*tr.abr*weatherWear(c,w)}
+function bestTyreFor(w){return TK.filter(k=>k!=='soft'&&k!=='medium').reduce((a,b)=>weatherPen(b,w)<weatherPen(a,w)?b:a,'hard')}
+const condAvg=c=>{let s=0;for(const[k]of PARTS)s+=c.pc[k];return s/PARTS.length};
+const condMin=c=>Math.min(...PARTS.map(([k])=>c.pc[k]));
+const freshPC=()=>Object.fromEntries(PARTS.map(([k])=>[k,100]));
+function lapTime(car,env,tr){
+  const d=car.d,t=car.team,ty=car.tyre.c;
+  let lt=tr.base+(100-carScore(t,tr))*.035+(100-d.pace)*.03+(60-d.morale)*.005+(1-car.setupQ)*.9;
+  lt+=TYRES[ty].delta+wearPen(car.tyre.wear)+weatherPen(ty,env.w)*(1.25-d.wet/100*.5);
+  lt+=[.45,0,-.35][car.mode]+[.3,0,-.25][car.eng];
+  lt+=car.fuel*.035+(1-env.grip)*.8;
+  const ca=condAvg(car);if(ca<70)lt+=(70-ca)*.02;
+  lt+=(100-car.pc.frontWing)*.008;
+  return lt+car.noise;
+}
+function grip(){return clamp(.55+RS.leaderLap/RS.laps*.4-RS.w*.5,.1,1)}
+function chooseDry(car,stint,w,tr){for(const c of['soft','medium','hard']){if(72/wearRate({...car,mode:1},c,w,tr)>=stint)return c}return 'medium'}
+const fuelTo=(car,tr)=>+Math.min(tr.cap,RS.laps-car.lapsDone+.6).toFixed(1);
+// what a race engineer would call this lap: null or {c,rep,fuel,why}
+function engineerCall(car,tr){
+  const lapsLeft=RS.laps-car.lapsDone,w=RS.w,cur=car.tyre.c;
+  if(lapsLeft<=1)return null;
+  const f1=RS.wet[Math.min(RS.wet.length-1,RS.leaderLap+1)],f2=RS.wet[Math.min(RS.wet.length-1,RS.leaderLap+2)];
+  const rep=condMin(car)<45&&lapsLeft>4,cat=TYRES[cur].cat,fuel=fuelTo(car,tr),stint=Math.min(lapsLeft,tr.cap);
+  const dry=()=>chooseDry(car,stint,w,tr);
+  if(cat==='dry'&&(w>.22||(w>.1&&f1>.3)))return {c:Math.max(w,f1)>.78?'wet':'inter',rep,fuel,why:'Rain is getting heavier'};
+  if(cat!=='dry'&&w<.15&&f1<.15&&f2<.15)return {c:dry(),rep,fuel,why:'Track is drying'};
+  if(cur==='inter'&&w>.82)return {c:'wet',rep,fuel,why:'Too wet for intermediates'};
+  if(cur==='wet'&&w<.55&&f1<.7)return {c:'inter',rep,fuel,why:'Rain is easing'};
+  if(car.fuel<1.7&&car.fuel<lapsLeft-.3)return {c:cat==='dry'&&car.tyre.wear>40?dry():(car.tyre.wear>40?cur:'keep'),rep,fuel,why:'Low on fuel'};
+  if(cat==='dry'&&car.tyre.wear>car.wearThresh&&lapsLeft>3)return {c:dry(),rep,fuel,why:'Tyres are worn'};
+  if(condMin(car)<30&&lapsLeft>5)return {c:'keep',rep:true,fuel,why:'Car needs repairs'};
+  return null;
+}
+
+/* ---------- weekend ---------- */
+function genWeather(tr){
+  const out=[];let rain=Math.random()<tr.rain*.45,int=R(.35,.95);
+  for(let l=0;l<=tr.laps+2;l++){
+    if(!rain&&Math.random()<tr.rain*.1){rain=true;int=R(.3,.95)}
+    else if(rain&&Math.random()<.09)rain=false;
+    out.push(rain?+int.toFixed(2):0);
+  }
+  return out;
+}
+function startWeekend(){
+  const tr=track();
+  W={round:G.round,phase:'practice',wet:genWeather(tr),setup:{},quali:null,startTyre:{},startFuel:{},setupQ:{}};
+  for(const id of PT().drivers)W.setup[id]={v:[50,50,50],runs:0,fb:null,conf:null,off:[RI(-9,9),RI(-9,9),RI(-9,9)]};
+  G.screen='weekend';save();render();
+}
+function setupQ(id){const s=W.setup[id],tr=track();let d=0;for(let i=0;i<3;i++)d+=Math.abs(s.v[i]-clamp(tr.opt[i]+s.off[i],0,100));return clamp(1-d/3/40,0,1)}
+const SL=[['Wing level','Low downforce','High downforce','more wing','less wing'],['Gear ratios','Short','Long','longer gears','shorter gears'],['Suspension','Soft','Stiff','a stiffer car','a softer car']];
+function practiceRun(id){
+  const s=W.setup[id],tr=track();if(s.runs>=4)return;s.runs++;
+  s.fb=s.v.map((v,i)=>{const o=clamp(tr.opt[i]+s.off[i],0,100),dd=Math.abs(v-o);
+    const g=dd<5?['Perfect','good']:dd<12?['Good','good']:dd<25?['Okay','warn']:['Poor','bad'];
+    return {g:g[0],cls:g[1],dir:dd<5?'':(v<o?SL[i][3]:SL[i][4])}});
+  s.conf=setupQ(id);save();render();
+}
+function runQuali(){
+  const tr=track(),env={w:W.wet[0],grip:.6},res=[];
+  for(const t of G.teams)for(const id of t.drivers){
+    const d=drv(id);const q=t.id==='P'?setupQ(id):R(.45,.9);W.setupQ[id]=q;
+    const c=W.wet[0]<.2?'soft':bestTyreFor(W.wet[0]);
+    const lt=lapTime({d,team:t,tyre:{c,wear:0},mode:2,eng:2,pc:freshPC(),fuel:2,setupQ:q,noise:gauss()*(1.1-d.consistency/100)*.5},env,tr);
+    res.push({id,t:lt});
+  }
+  res.sort((a,b)=>a.t-b.t);W.quali=res;W.phase='quali';
+  for(const id of PT().drivers){W.startTyre[id]=W.wet[0]<.2?'medium':bestTyreFor(W.wet[0]);W.startFuel[id]=Math.min(tr.cap,Math.ceil(tr.laps/2)+2)}
+  save();render();
+}
+
+/* ---------- race sim ---------- */
+function startRace(){
+  const tr=track();
+  RS={t:0,laps:tr.laps,cars:[],sc:0,w:W.wet[0],wet:W.wet,leaderLap:0,leaderFin:false,over:false,feed:[],fastest:{t:Infinity,id:null},speed:10,tr};
+  W.quali.forEach((q,i)=>{
+    const d=drv(q.id),t=team(d.teamId),mine=t.id==='P';
+    const c=mine?W.startTyre[q.id]:(W.wet[0]<.2?(Math.random()<.35?'soft':Math.random()<.85?'medium':'hard'):bestTyreFor(W.wet[0]));
+    const fuel=mine?W.startFuel[q.id]:Math.min(tr.cap,Math.round(tr.laps*R(.42,.6))+1.5);
+    RS.cars.push({id:q.id,d,team:t,mine,dist:-i*.003,lapsDone:0,lapStartT:0,tyre:{c,wear:0,age:0},pc:freshPC(),fuel,mode:1,eng:1,
+      box:null,boxSel:c,rep:false,fuelT:null,pitT:0,pitTot:0,stall:0,dnf:null,fin:false,finT:0,last:null,best:null,cool:0,stops:0,grid:i+1,
+      wearThresh:R(66,80),setupQ:W.setupQ[q.id]??.6,noise:(Math.random()-.5)*1.5,lt:tr.base,warned:{},side:i%2?1:-1,latT:0,lat:0,prevPos:i,pos:i});
+  });
+  W.phase='race';save();
+  UI.sel=RS.cars.findIndex(c=>c.mine);UI.cam.k=0;UI.pop=[null,null];
+  feed(`Lights out at ${tr.name}. ${RS.cars[0].d.name} leads from pole.`,'hot');
+  render();
+}
+function feed(text,cls=''){RS.feed.unshift({lap:RS.leaderLap,text,cls});if(RS.feed.length>80)RS.feed.pop()}
+function order(){return RS.cars.slice().sort((a,b)=>{
+  if(!!a.dnf!==!!b.dnf)return a.dnf?1:-1;
+  if(a.fin&&b.fin){const f=Math.floor(b.dist)-Math.floor(a.dist);return f||a.finT-b.finT}
+  return b.dist-a.dist})}
+function retire(car,why){
+  if(car.dnf)return;car.dnf=why;feed(`${car.d.name} retires: ${why}.`,car.mine?'hot':'');
+  if(!RS.sc&&RS.laps-RS.leaderLap>3&&Math.random()<.55){RS.sc=3;feed('Safety car deployed.','hot')}
+}
+function dmg(car,part,amt){car.pc[part]=Math.max(0,car.pc[part]-amt);if(car.pc[part]<=0)retire(car,FAIL[part])}
+function step(dt){
+  if(RS.over)return;
+  const tr=RS.tr;RS.t+=dt;
+  const target=RS.wet[Math.min(RS.wet.length-1,RS.leaderLap)];
+  RS.w+=clamp(target-RS.w,-dt*.004,dt*.004);
+  const env={w:RS.w,grip:grip()};
+  const ord=order();let ahead=null;
+  ord.forEach((c,i)=>c.pos=i);
+  for(const car of ord){
+    if(car.dnf||car.fin)continue;
+    if(car.pitT>0){car.pitT-=dt;if(car.pitT<=0){car.dist+=PL;car.pitTot=0}continue}
+    if(car.cool>0)car.cool-=dt;
+    let lt=lapTime(car,env,tr);car.lt=lt;
+    if(car.stall>0){car.stall-=dt;if(car.stall<=0)ahead=car;continue}
+    let adv,nd;
+    const near=ahead&&ahead.dist-car.dist<.5;
+    car.latT=0;
+    if(RS.sc){
+      lt=tr.base*1.4;adv=dt/lt;
+      if(near&&(ahead.dist-car.dist)*lt>.8)adv*=1.35;
+      nd=car.dist+adv;
+      if(near)nd=Math.max(car.dist,Math.min(nd,ahead.dist-.5/lt));
+    }else{
+      const gapS=near?(ahead.dist-car.dist)*lt:9;
+      if(gapS<1)lt+=.12;
+      if(gapS<.45)car.latT=car.side*.9;
+      adv=dt/lt;nd=car.dist+adv;
+      if(near){const minGap=.2/lt;
+        if(nd>ahead.dist-minGap){
+          const delta=ahead.lt-car.lt;let passed=false;
+          if(car.cool<=0&&delta>.05){
+            car.cool=1.8;
+            const p=clamp(.04+delta*.3+(car.d.racecraft-ahead.d.racecraft)/250+(car.mode===2?.06:0)-(ahead.mode===2?.03:0)-RS.w*.05,.01,.75)*tr.ovt;
+            if(car.mine||ahead.mine)RS.comm=`${car.d.name} is attempting to overtake ${ahead.d.name}`;
+            if(Math.random()<.005+RS.w*.01){
+              if(car.mine||ahead.mine)feed(`Contact! ${car.d.name} hits ${ahead.d.name}.`,'hot');
+              dmg(ahead,'rearWing',R(5,25));dmg(car,'suspension',R(0,15));dmg(car,'frontWing',R(15,45));
+            }else if(Math.random()<p){
+              passed=true;nd=ahead.dist+.0005;ahead.cool=1.5;
+              if(car.mine||ahead.mine)feed(`${car.d.name} passes ${ahead.d.name}.`,car.mine?'me':'hot');
+            }
+          }
+          if(!passed)nd=Math.max(car.dist,ahead.dist-minGap);
+        }
+      }
+    }
+    if(car.dnf)continue;
+    const moved=nd-car.dist,rf=1.6-relOf(car)/100,eF=[.6,1,1.8][car.eng],dF=[.7,1,1.4][car.mode];
+    car.tyre.wear=Math.min(100,car.tyre.wear+moved*wearRate(car,car.tyre.c,RS.w,tr)*(RS.sc?.3:1));
+    car.fuel-=moved*[.85,1,1.18][car.eng]*(RS.sc?.6:1);
+    const pr=car.team.parts;
+    car.pc.engine-=moved*2.1*eF*(1.6-pr.engine.rel/100);car.pc.gearbox-=moved*1.6*eF*(1.6-pr.gearbox.rel/100);
+    car.pc.brakes-=moved*1.7*dF*(1.6-pr.brakes.rel/100);car.pc.suspension-=moved*1.4*dF*(1.6-pr.suspension.rel/100);
+    car.pc.frontWing-=moved*.55*(1.6-pr.frontWing.rel/100);car.pc.rearWing-=moved*.55*(1.6-pr.rearWing.rel/100);
+    if(car.fuel<=0){car.fuel=0;retire(car,'out of fuel');continue}
+    const prev=car.dist;car.dist=nd;
+    if(Math.floor(nd)>Math.floor(prev)&&Math.floor(nd)>=1)crossLine(car);
+    if(!car.dnf&&!car.fin&&car.pitT<=0&&car.stall<=0)ahead=car;
+  }
+  if(RS.cars.every(c=>c.dnf||c.fin)){RS.over=true;feed('Chequered flag. Race over.','hot')}
+}
+function relOf(car){let s=0;for(const[k]of PARTS)s+=car.team.parts[k].rel;return s/PARTS.length}
+function crossLine(car){
+  const tr=RS.tr;
+  const lt=RS.t-car.lapStartT;car.lapStartT=RS.t;car.lapsDone=Math.floor(car.dist);car.tyre.age++;
+  if(!car.inPitLap){car.last=lt;if(!car.best||lt<car.best)car.best=lt;if(lt<RS.fastest.t){RS.fastest={t:lt,id:car.id};if(RS.leaderLap>1)RS.comm=`${car.d.name} sets the fastest lap: ${fmtT(lt)}`}}
+  car.inPitLap=false;
+  car.noise=gauss()*(1.1-car.d.consistency/100)*.6;
+  if(car.lapsDone>RS.leaderLap){RS.leaderLap=car.lapsDone;
+    for(const c of RS.cars)c.prevPos=c.pos;
+    if(RS.sc){RS.sc--;if(!RS.sc)feed('Safety car in. Racing resumes.','hot')}
+    else if(RS.laps-RS.leaderLap>4&&Math.random()<.025+RS.w*.05){RS.sc=RI(2,3);feed(pick(['Debris on track.','A car is stopped at turn 4.','Barrier repairs needed.'])+' Safety car deployed.','hot')}
+    const nx=RS.wet[Math.min(RS.wet.length-1,RS.leaderLap+2)];
+    if(nx>.15&&RS.w<.1&&!RS.rainWarn){RS.rainWarn=true;feed('Radio: rain expected within two laps.','hot')}
+    if(nx<.05&&RS.w>.3)RS.rainWarn=false;
+  }
+  if(RS.leaderFin||car.lapsDone>=RS.laps){car.fin=true;car.finT=RS.t;if(!RS.leaderFin){RS.leaderFin=true;feed(`${car.d.name} wins the ${tr.name} Grand Prix!`,'hot')}return}
+  const lapsLeft=RS.laps-car.lapsDone;
+  for(const[k]of PARTS){const p=car.pc[k];if((p<50&&Math.random()<(50-p)/50*.06)||Math.random()<.00025*(1.8-car.team.parts[k].rel/100)){retire(car,FAIL[k]);return}}
+  const spin=.004+(100-car.d.consistency)/100*.015+(car.mode===2?.008:0)+RS.w*.03*(1-car.d.wet/100)+(TYRES[car.tyre.c].cat==='dry'?RS.w*.05:0);
+  if(!RS.sc&&Math.random()<spin){
+    if(Math.random()<.15){feed(`${car.d.name} spins and damages the car.`,car.mine?'hot':'');dmg(car,pick(['suspension','frontWing','rearWing']),R(20,50));if(car.dnf)return}
+    else if(car.mine)feed(`${car.d.name} runs wide and loses time.`,'me');
+    car.stall=R(2.5,7);
+  }
+  if(!car.mine){
+    const call=engineerCall(car,tr);if(call)car.box=call;
+    car.mode=car.tyre.wear>62?0:1;
+    if(!car.box&&lapsLeft<=5&&condMin(car)>45)car.mode=2;
+    car.eng=car.fuel<lapsLeft&&car.fuel>lapsLeft-1.5?0:(lapsLeft<=5&&condMin(car)>50&&car.fuel>lapsLeft*1.2+.5?2:(condMin(car)<45?0:1));
+  }else{
+    if(car.tyre.wear>70&&!car.warned.wear){car.warned.wear=1;feed(`Radio ${car.d.code}: "Tyres are going off."`,'me')}
+    if(condMin(car)<45&&!car.warned.cond){car.warned.cond=1;feed(`Radio ${car.d.code}: "Something doesn't feel right with the car."`,'hot')}
+    if(car.fuel<2.2&&car.fuel<lapsLeft&&!car.warned.fuel){car.warned.fuel=1;feed(`Radio ${car.d.code}: "Fuel is getting low. Two laps left."`,'hot')}
+  }
+  if(car.box){
+    const b=car.box;car.box=null;
+    let work=0;
+    if(b.c!=='keep'){work=2.4+R(0,.8);car.tyre={c:b.c,wear:0,age:0};car.warned.wear=0}
+    const tgt=b.fuel??fuelTo(car,tr),add=Math.max(0,tgt-car.fuel);
+    if(add>0){work=Math.max(work,1.5+add*.3);car.fuel+=add;car.warned.fuel=0}
+    if(b.rep){let def=0;for(const[k]of PARTS){def+=100-car.pc[k];car.pc[k]=100}work+=def*.02;car.warned.cond=0}
+    work=Math.max(work,2);
+    let tm=Math.max(3,tr.pit*(RS.sc?.55:1)-PL*tr.base)+work;
+    if(Math.random()<.03){tm+=R(3,7);feed(`Slow stop for ${car.d.name}.`,car.mine?'hot':'')}
+    car.stops++;car.pitT=tm;car.pitTot=tm;car.inPitLap=true;
+    if(car.mine){car.rep=false;car.fuelT=null;if(b.c!=='keep')car.boxSel=b.c}
+    feed(`${car.d.name} pits${b.c!=='keep'?' for '+TYRES[b.c].n:''}${add>0?`, +${add.toFixed(1)} laps fuel`:''}${b.rep?', repairs':''} (${work.toFixed(1)}s stationary).`,car.mine?'me':'');
+  }
+}
+
+/* ---------- results & season ---------- */
+function teamRank(){return G.teams.slice().sort((a,b)=>carAvg(b)-carAvg(a)).map(t=>t.id)}
+function sponsorTarget(){return clamp(teamRank().indexOf('P')*2+1,1,12)}
+function finishRace(){
+  const o=order(),pt=PT(),tr=RS.tr;
+  const rank=teamRank();const res=[];let pts=0,best=99;
+  o.forEach((c,i)=>{
+    const p=!c.dnf&&i<10?POINTS[i]:0;
+    c.d.points+=p;c.team.points+=p;if(i===0&&!c.dnf)c.d.wins++;if(i<3&&!c.dnf)c.d.podiums++;
+    if(c.mine){pts+=p;if(!c.dnf)best=Math.min(best,i+1);
+      const exp=rank.indexOf('P')*2+1.5;let dm=c.dnf?-4:clamp(Math.round((exp-(i+1))*1.5),-8,8);
+      c.d.morale=clamp(c.d.morale+dm,0,100)}
+    res.push({id:c.id,pos:i+1,pts:p,dnf:c.dnf,laps:c.lapsDone,stops:c.stops,best:c.best,grid:c.grid,fl:RS.fastest.id===c.id});
+  });
+  const mine=o.filter(c=>c.mine);
+  if(mine.length===2&&!mine[0].dnf){mine[0].d.morale=clamp(mine[0].d.morale+2,0,100);mine[1].d.morale=clamp(mine[1].d.morale-2,0,100)}
+  const target=sponsorTarget();
+  const fin={sponsor:pt.sponsor,bonus:best<=target?.6e6:0,prize:pts*.05e6,salaries:-pt.drivers.reduce((s,id)=>s+drv(id).salary,0)/TRACKS.length,running:-pt.running,fine:0,project:''};
+  for(const[k,n]of PARTS){const p=pt.parts[k];if(p.risky&&Math.random()<.14){p.risky=false;p.perf=Math.max(30,p.perf-8);fin.fine-=1.5e6;fin.project+=`Scrutineers found your ${n.toLowerCase()} outside the rules: fined $1.50M, part rebuilt to legal spec. `}}
+  if(G.project){G.project.left--;if(G.project.left<=0){const pj=G.project,p=pt.parts[pj.part];
+    if(pj.kind==='rel'){p.rel=clamp(p.rel+pj.rel,0,99);fin.project+=`Reliability upgrade fitted to the ${pj.name.toLowerCase()} (+${pj.rel}). `}
+    else{p.perf=clamp(p.perf+pj.perf,0,99);p.rel=pj.rel;p.risky=pj.kind==='grey';fin.project+=`New ${pj.name.toLowerCase()} fitted: +${pj.perf} performance, ${pj.rel} reliability. `}
+    G.project=null}}
+  const net=Object.values(fin).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0);G.budget+=net;
+  for(const t of G.teams)if(t.id!=='P'&&Math.random()<.45+t.tier*.35){const k=pick(PARTS)[0];t.parts[k].perf=clamp(t.parts[k].perf+RI(1,3+Math.round(t.tier*2)),0,99)}
+  const winner=o[0];
+  G.history.push({round:G.round,track:tr.name,winner:winner.d.name,wcolor:winner.team.color});
+  const qs=QUESTIONS[RI(0,QUESTIONS.length-1)];
+  const bd=mine.slice().sort((a,b)=>o.indexOf(a)-o.indexOf(b))[0];
+  G.last={res,fin,net,best,target,q:qs,bestId:bd?bd.id:pt.drivers[0],answered:null,track:tr.name,round:G.round};
+  G.round++;W=null;RS=null;G.screen='results';save();render();
+}
+function answer(i){
+  const L=G.last;if(L.answered!=null)return;L.answered=i;const e=L.q.a[i][1];
+  for(const id of PT().drivers){const d=drv(id);let dm=e.both||0;if(id===L.bestId&&e.best)dm=e.best;if(id!==L.bestId&&e.other)dm=e.other;d.morale=clamp(d.morale+dm,0,100)}
+  save();render();
+}
+function afterResults(){
+  if(G.round>=TRACKS.length){G.screen='season';save();render();return}
+  G.screen='hub';UI.tab='overview';save();render();
+}
+function standingsD(){return Object.values(G.drivers).filter(d=>d.teamId).sort((a,b)=>b.points-a.points||b.wins-a.wins)}
+function standingsT(){return G.teams.slice().sort((a,b)=>b.points-a.points)}
+const PRIZE=[8,6.5,5,4,3,2.5,2,1.5];
+function newSeason(){
+  const st=standingsT(),pos=st.findIndex(t=>t.id==='P');
+  G.budget+=PRIZE[pos]*1e6;
+  G.seasonLog.push({season:G.season,champ:standingsD()[0].name,team:st[0].name,me:pos+1});
+  for(const t of G.teams){t.points=0;for(const[k]of PARTS){t.parts[k].perf=Math.round(t.parts[k].perf*.93);t.parts[k].risky=false}}
+  const left=[];
+  for(const d of Object.values(G.drivers)){d.points=0;d.age++;
+    const g=d.age<26?R(0,3):d.age>32?R(-3,0):R(-1,1.5);for(const k of['pace','racecraft','tyre','consistency','wet'])d[k]=clamp(Math.round(d[k]+g+R(-1,1)),35,99);
+    if(d.teamId==='P'&&d.morale<20)left.push(d)}
+  for(const d of left){const t=PT(),i=t.drivers.indexOf(d.id);const nd=G.drivers[G.market.shift()];t.drivers[i]=nd.id;nd.teamId='P';d.teamId=null;G.market.push(d.id);d.morale=60}
+  while(G.market.length<6){const d=mkDriver(pick(NAMES),R(.3,.85));d.num=60+G.nid;G.market.push(d.id)}
+  G.season++;G.round=0;G.history=[];G.screen='hub';UI.tab='overview';save();render();
+  if(left.length)toast(`${left.map(d=>d.name).join(' and ')} quit over low morale. Replaced from the market.`);
+}
+
+/* ---------- design & market ---------- */
+const DESIGNS={
+  safe:{n:'Conservative',cost:1.1e6,races:2,perf:[3,6],rel:[80,90],txt:'Proven concept. Small gain, very reliable.'},
+  bold:{n:'Ambitious',cost:1.9e6,races:3,perf:[6,11],rel:[55,75],txt:'Bigger step. Reliability will suffer at first.'},
+  grey:{n:'Grey area',cost:2.4e6,races:3,perf:[10,15],rel:[50,70],txt:'Bends the rules. Scrutineers may fine you each race.'}};
+function startDesign(kind){
+  if(G.project)return;const part=UI.dpart,name=PNAME[part];
+  if(kind==='rel'){if(G.budget<.6e6)return toast('Not enough budget.');G.budget-=.6e6;G.project={part,name,kind,left:1,rel:RI(10,18),total:1}}
+  else{const D=DESIGNS[kind];if(G.budget<D.cost)return toast('Not enough budget.');G.budget-=D.cost;
+    G.project={part,name,kind,left:D.races,total:D.races,perf:RI(...D.perf),rel:RI(...D.rel)}}
+  save();render();toast(`Design started: ${name}. Ready in ${G.project.left} race${G.project.left>1?'s':''}.`);
+}
+function sign(fid,seat){
+  const nd=drv(fid),t=PT(),old=drv(t.drivers[seat]),fee=nd.salary*.5;
+  if(G.budget<fee)return toast('Not enough budget for the signing fee.');
+  G.budget-=fee;G.market=G.market.filter(x=>x!==fid);G.market.push(old.id);old.teamId=null;nd.teamId='P';t.drivers[seat]=nd.id;nd.morale=clamp(nd.morale+10,0,100);
+  save();render();toast(`${nd.name} signed. ${old.name} released.`);
+}
+function toast(msg){let el=$('.toast');if(!el){el=document.createElement('div');el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=msg;clearTimeout(UI.toastT);UI.toastT=setTimeout(()=>el.remove(),3200)}
+
+/* ---------- track geometry ---------- */
+const PATHS={};
+function path(i){
+  if(PATHS[i])return PATHS[i];
+  const pts=TRACKS[i].pts,n=pts.length,P=[];
+  for(let j=0;j<n;j++){const p0=pts[(j-1+n)%n],p1=pts[j],p2=pts[(j+1)%n],p3=pts[(j+2)%n];
+    for(let s=0;s<30;s++){const t=s/30,t2=t*t,t3=t2*t;
+      const f=(a,b,c,d)=>.5*(2*b+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
+      P.push([f(p0[0],p1[0],p2[0],p3[0]),f(p0[1],p1[1],p2[1],p3[1])])}}
+  const L=[0];for(let j=1;j<=P.length;j++){const a=P[j-1],b=P[j%P.length];L.push(L[j-1]+Math.hypot(b[0]-a[0],b[1]-a[1]))}
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const[x,y]of P){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+  return PATHS[i]={P,L,total:L[L.length-1],x0,y0,x1,y1};
+}
+function posAt(pa,f){
+  f=((f%1)+1)%1;const tg=f*pa.total;let lo=0,hi=pa.L.length-1;
+  while(hi-lo>1){const m=(lo+hi)>>1;if(pa.L[m]<=tg)lo=m;else hi=m}
+  const a=pa.P[lo],b=pa.P[(lo+1)%pa.P.length],seg=pa.L[lo+1]-pa.L[lo]||1,u=(tg-pa.L[lo])/seg;
+  return [a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u];
+}
+function frame(pa,f){const a=posAt(pa,f),b=posAt(pa,f+.002),dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;return{x:a[0],y:a[1],ang:Math.atan2(dy,dx),nx:-dy/l,ny:dx/l}}
+function fitter(pa,w,h,pad){const s=Math.min((w-2*pad)/(pa.x1-pa.x0),(h-2*pad)/(pa.y1-pa.y0));const ox=(w-(pa.x1-pa.x0)*s)/2-pa.x0*s,oy=(h-(pa.y1-pa.y0)*s)/2-pa.y0*s;return([x,y])=>[x*s+ox,y*s+oy]}
+function drawOutline(ctx,i,w,h,pad,lw,col){
+  const pa=path(i),T=fitter(pa,w,h,pad);
+  ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();pa.P.forEach((p,j)=>{const[x,y]=T(p);j?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
+  ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke();return T;
+}
+/* ---------- stylised world (painted once per track) ---------- */
+const TW=4.4; // track width in world units
+const THEMES={
+  forest:{ground:'#2c4426',g2:'#35502c',g3:'#253b20',tree:['#1f3a1c','#2a4a24','#335a2a'],trees:950,bld:20,palm:false},
+  city:{ground:'#3b4045',g2:'#454b51',g3:'#33383d',tree:['#2a4a28','#36592f'],trees:140,bld:260,palm:false},
+  desert:{ground:'#b39563',g2:'#c2a571',g3:'#a3855a',tree:['#55703a','#6a8644'],trees:70,bld:40,palm:true},
+  coast:{ground:'#3e5a37',g2:'#4a6941',g3:'#354e2f',tree:['#2b4d29','#3c6334'],trees:260,bld:120,palm:true}};
+const WORLDS={};
+function world(i){
+  if(WORLDS[i])return WORLDS[i];
+  const tr=TRACKS[i],pa=path(i),th=THEMES[tr.theme],r=rng(i*977+13),m=16;
+  const x0=pa.x0-m,y0=pa.y0-m,x1=pa.x1+m,y1=pa.y1+m,PX=18;
+  const cv=document.createElement('canvas');cv.width=Math.ceil((x1-x0)*PX);cv.height=Math.ceil((y1-y0)*PX);
+  const c=cv.getContext('2d');c.setTransform(PX,0,0,PX,-x0*PX,-y0*PX);
+  c.fillStyle=th.ground;c.fillRect(x0,y0,x1-x0,y1-y0);
+  for(let k=0;k<420;k++){c.fillStyle=r()<.5?th.g2:th.g3;c.globalAlpha=.5;c.beginPath();c.ellipse(x0+r()*(x1-x0),y0+r()*(y1-y0),2+r()*7,1+r()*4,r()*3,0,7);c.fill()}
+  c.globalAlpha=1;
+  const samp=pa.P.filter((_,j)=>j%2===0);
+  const near=(x,y,d)=>{for(const p of samp){if((p[0]-x)**2+(p[1]-y)**2<d*d)return true}return false};
+  let inSea=()=>false;
+  if(tr.sea){
+    const wave=(t)=>Math.sin(t*.25)*1.6+Math.sin(t*.07)*2.5;
+    const S=tr.sea;
+    const edge=S==='S'?pa.y1+4:S==='N'?pa.y0-4:S==='E'?pa.x1+4:pa.x0-4;
+    inSea=(x,y)=>S==='S'?y>edge+wave(x):S==='N'?y<edge+wave(x):S==='E'?x>edge+wave(y):x<edge+wave(y);
+    const draw=(off,col)=>{c.fillStyle=col;c.beginPath();
+      if(S==='S'||S==='N'){const yy=S==='S'?y1:y0;c.moveTo(x0,yy);for(let x=x0;x<=x1;x+=1)c.lineTo(x,edge+wave(x)+(S==='S'?off:-off));c.lineTo(x1,yy)}
+      else{const xx=S==='E'?x1:x0;c.moveTo(xx,y0);for(let y=y0;y<=y1;y+=1)c.lineTo(edge+wave(y)+(S==='E'?off:-off),y);c.lineTo(xx,y1)}
+      c.closePath();c.fill()};
+    draw(-1.8,'#cdbb8a');draw(0,'#1d6079');draw(2.5,'#195570');draw(6,'#164a63');
+  }
+  // buildings
+  for(let k=0;k<th.bld;k++){const x=x0+r()*(x1-x0),y=y0+r()*(y1-y0),w=2+r()*6,h=2+r()*5;
+    if(near(x,y,TW+Math.max(w,h)*.8)||inSea(x,y))continue;
+    c.save();c.translate(x,y);c.rotate((r()<.6?0:Math.PI/2)+(r()-.5)*.3);
+    c.fillStyle='rgba(0,0,0,.28)';c.fillRect(-w/2+.5,-h/2+.6,w,h);
+    const g=170+Math.floor(r()*60);c.fillStyle=`rgb(${g},${g+4},${g+8})`;c.fillRect(-w/2,-h/2,w,h);
+    c.fillStyle='rgba(0,0,0,.08)';c.fillRect(-w/2,-h/2,w,h*.35);c.restore()}
+  // trees
+  for(let k=0;k<th.trees;k++){const x=x0+r()*(x1-x0),y=y0+r()*(y1-y0);if(near(x,y,TW+2.2)||inSea(x,y))continue;
+    const s=th.palm?.55+r()*.3:.7+r()*.9;
+    c.fillStyle='rgba(0,0,0,.3)';c.beginPath();c.ellipse(x+s*.45,y+s*.5,s,s*.8,0,0,7);c.fill();
+    c.fillStyle=th.tree[Math.floor(r()*th.tree.length)];c.beginPath();
+    if(th.palm){for(let a=0;a<6;a++){c.ellipse(x+Math.cos(a)*s*.6,y+Math.sin(a)*s*.6,s*.7,s*.22,a,0,7)}}else c.arc(x,y,s,0,7);
+    c.fill();c.fillStyle='rgba(255,255,255,.07)';c.beginPath();c.arc(x-s*.25,y-s*.25,s*.45,0,7);c.fill()}
+  // grandstands + pit building along the start straight
+  const ps=tr.ps;
+  for(let f=.004;f<.05;f+=.0055){const F=frame(pa,f);
+    c.save();c.translate(F.x+F.nx*ps*(TW/2+5.6),F.y+F.ny*ps*(TW/2+5.6));c.rotate(F.ang);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(-1.4,-1+.4,2.9,2.2);c.fillStyle='#d9dee2';c.fillRect(-1.5,-1.1,3,2.2);c.restore();
+    c.save();c.translate(F.x-F.nx*ps*(TW/2+3),F.y-F.ny*ps*(TW/2+3));c.rotate(F.ang);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(-1.4,-1,2.9,2.6);
+    for(let s=0;s<5;s++){c.fillStyle=s%2?'#5a6b78':'#7d8f9c';c.fillRect(-1.5,-1.2+s*.5,3,.5)}c.restore()}
+  // track layers
+  const trace=(off=0)=>{c.beginPath();pa.P.forEach((p,j)=>{j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])});c.closePath()};
+  c.lineJoin='round';c.lineCap='round';
+  trace();c.strokeStyle='rgba(120,140,110,.55)';c.lineWidth=TW+3.2;c.stroke();
+  // kerbs at corners
+  const n=pa.P.length;
+  for(let j=0;j<n;j++){const a=pa.P[(j-3+n)%n],b=pa.P[j],d=pa.P[(j+3)%n];
+    const a1=Math.atan2(b[1]-a[1],b[0]-a[0]),a2=Math.atan2(d[1]-b[1],d[0]-b[0]);let da=Math.abs(a2-a1);if(da>Math.PI)da=2*Math.PI-da;
+    if(da>.16){const e=pa.P[(j+1)%n];c.beginPath();c.moveTo(b[0],b[1]);c.lineTo(e[0],e[1]);c.strokeStyle=j%2?'#d23b3b':'#f1f1f1';c.lineWidth=TW+1.1;c.lineCap='butt';c.stroke()}}
+  c.lineCap='round';
+  trace();c.strokeStyle='#e7ecef';c.lineWidth=TW+.4;c.stroke();
+  trace();c.strokeStyle='#3a3f45';c.lineWidth=TW;c.stroke();
+  trace();c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=1.4;c.stroke();
+  // pit lane
+  c.beginPath();for(let f=-.008;f<=PL+.008;f+=.0008){const F=frame(pa,f),o=ps*(TW/2+1.5)*Math.min(1,(f+.008)/.01,(PL+.008-f)/.01);const x=F.x+F.nx*o,y=F.y+F.ny*o;f<-.0075?c.moveTo(x,y):c.lineTo(x,y)}
+  c.strokeStyle='#e7ecef';c.lineWidth=1.75;c.stroke();c.strokeStyle='#45494f';c.lineWidth=1.5;c.stroke();
+  G&&G.teams.forEach((t,k)=>{const F=frame(pa,.012+k*.0042);c.save();c.translate(F.x+F.nx*ps*(TW/2+2.75),F.y+F.ny*ps*(TW/2+2.75));c.rotate(F.ang);c.fillStyle=t.color;c.fillRect(-.6,-.4,1.2,.8);c.restore()});
+  // start line + grid
+  {const F=frame(pa,0);c.save();c.translate(F.x,F.y);c.rotate(F.ang);for(let k=0;k<8;k++)for(let mm=0;mm<2;mm++){c.fillStyle=(k+mm)%2?'#fff':'#111';c.fillRect(mm*.35-.35,-TW/2+k*TW/8,.35,TW/8)}c.restore();
+   for(let g=1;g<=16;g++){const F2=frame(pa,-g*.003);c.save();c.translate(F2.x+F2.nx*(g%2?1:-1)*TW*.22,F2.y+F2.ny*(g%2?1:-1)*TW*.22);c.rotate(F2.ang);c.fillStyle='rgba(255,255,255,.7)';c.fillRect(-.05,-.5,.12,1);c.restore()}}
+  return WORLDS[i]={cv,PX,x0,y0,x1,y1,bg:th.ground};
+}
+
+/* ---------- rendering: shell ---------- */
+const app=$('#app');
+const ICONS={overview:'<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',car:'<path d="M2 13h3l2-4h10l2 4h3v4h-2a2 2 0 01-4 0H8a2 2 0 01-4 0H2z"/>',drivers:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7z"/>',standings:'<path d="M4 20V10h4v10zm6 0V4h4v16zm6 0v-7h4v7z"/>',quit:'<path d="M10 4H4v16h6v-2H6V6h4zm4 3l-1.4 1.4 2.6 2.6H8v2h7.2l-2.6 2.6L14 17l5-5z"/>'};
+function topBar(page,sub){
+  const t=PT(),next=TRACKS[Math.min(G.round,TRACKS.length-1)];const nm=t.name.split(' ');
+  return `<div class="top" style="--team:${t.color}">
+   <div class="tb-l"><div class="tb-team">${esc(nm[0])}<small>${esc(nm.slice(1).join(' ')||'Racing')}</small></div><div class="tb-page"><b>${page}</b><span>${sub}</span></div></div>
+   <div class="kpis">
+    <div class="pill money"><div class="eyebrow">Balance</div><div class="v ${G.budget<0?'bad':''}">${money(G.budget)}</div></div>
+    <div class="pill"><div class="eyebrow">Teams' champ.</div><div class="v">${ord(standingsT().findIndex(x=>x.id==='P')+1)} · ${t.points} pts</div></div>
+    <div class="pill"><div class="eyebrow">Next race</div><div class="v">${G.round<TRACKS.length?esc(next.name):'Season over'}</div></div>
+   </div></div>`;
+}
+function bottomNav(){
+  const tabs=[['overview','Home'],['car','Car'],['drivers','Drivers'],['standings','Standings']];
+  return `<nav class="bnav" aria-label="Team menu"><div class="bnav-in">${tabs.map(([k,n])=>`<button class="nt ${UI.tab===k?'on':''}" data-act="tab" data-v="${k}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[k]}</svg>${n}</button>`).join('')}
+   <button class="nt" data-act="quit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS.quit}</svg>Menu</button><span class="sp"></span>
+   <div class="date">Season ${G.season}<br>Round ${G.round+1} of ${TRACKS.length}</div><button class="cont" data-act="weekend">Continue ›</button></div></nav>`;
+}
+function render(){
+  cancelAnimationFrame(UI.raf);
+  document.body.classList.toggle('hasnav',!!(G&&G.screen==='hub'));
+  if(!G){return UI.picking?renderTeamSelect():renderTitle()}
+  if(G.screen==='hub')return renderHub();
+  if(G.screen==='weekend'){if(W&&W.phase==='race'){if(!RS)startRace();else renderRace();return}return renderWeekend()}
+  if(G.screen==='results')return renderResults();
+  if(G.screen==='season')return renderSeason();
+}
+function renderTitle(){
+  app.innerHTML=`<div class="title">
+   <div class="eyebrow">A racing team management game</div>
+   <h1>Pit Wall</h1>
+   <p>Take charge of a team. Hire drivers, design parts, dial in setups, and call the strategy from the pit wall: tyres, fuel, pit stops, weather and engine modes, live, lap by lap. Eight rounds per season.</p>
+   <div class="row"><button class="btn" data-act="pickteam">New career</button>${hasSave()?'<button class="ghost" data-act="continue">Continue saved career</button>':''}</div></div>`;
+}
+function renderTeamSelect(){
+  const T=previewTeams(),i=UI.pickIdx??7,t=T[i];const rank=T.slice().sort((a,b)=>b.tier-a.tier).indexOf(t)+1;const pr=pressure(t.tier);
+  const col=t.id==='C'?UI.newColor:t.color;
+  app.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:16px"><div><div class="eyebrow">New career</div><h2>Team select</h2></div><button class="ghost" data-act="back">Back</button></div>
+  <div class="tsel"><div class="tcards">${T.map((x,k)=>`<button class="tcard ${k===i?'on':''}" style="--tc:${x.id==='C'?UI.newColor:x.color}" data-act="pickidx" data-v="${k}"><b>${esc(x.id==='C'&&UI.newName?UI.newName:x.name)}</b>${stars(x.tier)}</button>`).join('')}</div>
+   <div class="panel tdet" style="--tc:${col}"><h2>${esc(t.id==='C'&&UI.newName?UI.newName:t.name)}</h2><p class="muted" style="margin:0">${t.desc}</p>
+    <div class="kv"><div><span class="eyebrow">Budget</span><b>${money(t.budget)}</b></div><div><span class="eyebrow">Car rating</span><b>${carAvg(t).toFixed(1)}</b></div>
+     <div><span class="eyebrow">Expected finish</span><b>${ord(rank)}</b></div><div><span class="eyebrow">Pressure</span><b class="${pr[1]}">${pr[0]}</b></div></div>
+    <div><div class="eyebrow" style="margin-bottom:6px">Car parts</div><div class="cbars">${PARTS.map(([k])=>`<i style="height:${t.parts[k].perf}%;background:${col}"></i>`).join('')}</div><div class="cbl">${PARTS.map(([,n])=>`<span>${n.split(' ')[0]}</span>`).join('')}</div></div>
+    ${t.id==='C'?`<div class="stack" style="gap:8px"><label class="eyebrow" for="tname">Team name</label><input type="text" id="tname" maxlength="26" value="${esc(UI.newName||t.name)}">
+      <div class="swatches">${COLORS.map(c=>`<button class="sw ${c===UI.newColor?'on':''}" style="background:${c}" data-act="color" data-v="${c}" aria-label="Team colour ${c}"></button>`).join('')}</div></div>`:''}
+    <button class="btn" data-act="new">Manage ${esc(t.id==='C'&&UI.newName?UI.newName:t.name)} ›</button></div></div>`;
+}
+function partFit(t,tr){
+  const card=k=>{const p=t.parts[k],best=Math.max(...G.teams.map(f=>f.parts[k].perf));return `<div class="pcard2"><div class="ph ${p.risky?'risky':''}"><span>${p.risky?'Grey area':'Fitted'}</span><span class="imp" title="Importance at ${tr.name}">${'●'.repeat(Math.max(1,Math.round(tr.w[k]*12)))}</span></div><b>${PNAME[k]}</b>
+    <div class="row" style="gap:6px;font-size:11px"><span class="muted" style="width:30px">Perf</span><div class="bar" style="flex:1"><i style="width:${p.perf}%;background:${t.color}"></i></div><span class="mono">${p.perf}</span></div>
+    <div class="row" style="gap:6px;font-size:11px"><span class="muted" style="width:30px">Rel</span><div class="bar" style="flex:1"><i style="width:${p.rel}%;background:${p.rel<60?'var(--bad)':p.rel<75?'var(--warn)':'var(--good)'}"></i></div><span class="mono">${p.rel}</span></div>
+    <span class="muted" style="font-size:10px">Grid best ${best}</span></div>`};
+  return `<div class="fit">${card('frontWing')}${carSVG(t.color)}${card('brakes')}${card('engine')}${card('suspension')}${card('rearWing')}${card('gearbox')}</div>`;
+}
+function carSVG(col){return `<svg class="carsvg" viewBox="0 0 100 240" aria-hidden="true"><g fill="#5f727d"><rect x="8" y="14" width="84" height="12" rx="2"/><rect x="2" y="38" width="18" height="34" rx="4"/><rect x="80" y="38" width="18" height="34" rx="4"/><rect x="0" y="168" width="22" height="40" rx="4"/><rect x="78" y="168" width="22" height="40" rx="4"/><rect x="14" y="218" width="72" height="14" rx="2"/></g><path d="M44 18h12l4 50 16 20v70l-10 40H34l-10-40V88l16-20z" fill="${col}" opacity=".85"/><circle cx="50" cy="112" r="7" fill="#e3ecf0"/></svg>`}
+function renderHub(){
+  const t=PT(),tr=track();
+  let body='',page='Home',sub='Your team at a glance.';
+  if(UI.tab==='overview'){
+    const imp=PARTS.map(([k,n])=>[n,tr.w[k]]).sort((a,b)=>b[1]-a[1]);
+    body=`<div class="grid2">
+     <div class="panel stack"><div><div class="eyebrow">Round ${G.round+1} · ${tr.code}</div><h2>${tr.name} Grand Prix</h2></div>
+      <canvas id="mini" style="width:100%;height:240px"></canvas>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+       <div><div class="eyebrow">Laps</div><div class="mono">${tr.laps}</div></div>
+       <div><div class="eyebrow">Fuel tank</div><div class="mono">${tr.cap} laps</div></div>
+       <div><div class="eyebrow">Rain risk</div><div class="mono">${Math.round(tr.rain*100)}%</div></div>
+       <div><div class="eyebrow">Overtaking</div><div class="mono">${tr.ovt>1.1?'Easy':tr.ovt>.8?'Medium':'Hard'}</div></div>
+       <div><div class="eyebrow">Tyre wear</div><div class="mono">${tr.abr>1.1?'High':tr.abr>.9?'Medium':'Low'}</div></div>
+       <div><div class="eyebrow">Pit lane loss</div><div class="mono">${tr.pit}s</div></div>
+       <div><div class="eyebrow">Key parts</div><div class="mono">${imp[0][0]}, ${imp[1][0]}</div></div>
+      </div></div>
+     <div class="stack">
+      <div class="panel"><div class="eyebrow">Sponsor objective</div><h3 style="margin-top:4px">Finish ${ord(sponsorTarget())} or better</h3><p class="muted" style="margin:4px 0 0">Bonus $0.60M. Base sponsorship ${money(t.sponsor)} per race.</p></div>
+      <div class="panel"><div class="eyebrow">Factory</div>${G.project?`<h3 style="margin-top:4px">${G.project.name}: ${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n}</h3><p class="muted" style="margin:4px 0 0">Ready in ${G.project.left} race${G.project.left>1?'s':''}.</p>`:`<h3 style="margin-top:4px">Design team idle</h3><p class="muted" style="margin:4px 0 0">Start a new part from the Car screen.</p>`}</div>
+      <div class="panel"><div class="eyebrow">Calendar</div><div class="cal" style="margin-top:8px">${TRACKS.map((x,i)=>{const h=G.history.find(y=>y.round===i);return `<div class="${i===G.round?'now':i<G.round?'done':''}"><span class="eyebrow">R${i+1}</span><b>${x.name}</b>${h?`<span class="muted"><span class="chip" style="background:${h.wcolor}"></span>${esc(h.winner.split(' ')[1])}</span>`:''}</div>`}).join('')}</div></div>
+     </div></div>`;
+  }else if(UI.tab==='car'){
+    page='Car';sub='Fitted parts and the design office.';
+    body=`<div class="grid2"><div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Part fitting</h3><span class="eyebrow">Dots: importance at ${tr.name}</span></div>${partFit(t,tr)}
+     <p class="muted" style="font-size:12px;margin:0">Reliability sets how fast each part wears during a race. Worn parts slow the car and can fail. You can repair them at a pit stop.</p></div>
+     <div class="panel stack"><h3>Design new parts</h3>
+      ${G.project?`<div><div class="eyebrow">In progress</div><p style="margin:4px 0">${G.project.name} (${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n})</p><div class="bar"><i style="width:${(1-G.project.left/G.project.total)*100+8}%"></i></div><p class="muted">Ready in ${G.project.left} race${G.project.left>1?'s':''}. One project at a time.</p></div>`:`
+      <div class="row"><label for="dpart" class="eyebrow">Part</label><select id="dpart" data-act="dpart">${PARTS.map(([k,n])=>`<option value="${k}" ${UI.dpart===k?'selected':''}>${n} (${t.parts[k].perf})</option>`).join('')}</select></div>
+      <div class="design">${Object.entries(DESIGNS).map(([k,D])=>`<button class="dopt" data-act="design" data-v="${k}" ${G.budget<D.cost?'disabled':''}><b>${D.n}</b><span class="mono">${money(D.cost)} · ${D.races} races</span><span class="mono good">+${D.perf[0]}–${D.perf[1]} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`).join('')}
+       <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6?'disabled':''}><b>Improve part</b><span class="mono">$0.60M · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`}
+     </div></div>`;
+  }else if(UI.tab==='drivers'){
+    page='Drivers';sub='Your line-up and the driver market.';
+    body=`<div class="grid2">${t.drivers.map(id=>dcard(drv(id),t.color)).join('')}</div>
+     <div class="panel" style="margin-top:16px"><h3>Driver market</h3><p class="muted" style="margin:4px 0 8px">Signing fee is half a season's salary. The released driver joins the market.</p>
+     <div class="scroll"><table><tr><th>Driver</th><th>Age</th><th>Rating</th><th>Pace</th><th>Racecraft</th><th>Tyres</th><th>Consist.</th><th>Wet</th><th>Salary/yr</th><th></th></tr>
+     ${G.market.map(id=>{const d=drv(id);return `<tr><td>${esc(d.name)}</td><td class="mono">${d.age}</td><td class="mono"><b>${rating(d)}</b></td><td class="mono">${d.pace}</td><td class="mono">${d.racecraft}</td><td class="mono">${d.tyre}</td><td class="mono">${d.consistency}</td><td class="mono">${d.wet}</td><td class="mono">${money(d.salary)}</td>
+      <td style="white-space:nowrap">${t.drivers.map((x,s)=>`<button class="ghost" data-act="sign" data-v="${id}" data-s="${s}">Replace ${drv(x).code}</button>`).join(' ')}</td></tr>`}).join('')}</table></div></div>`;
+  }else{
+    page='Standings';sub='World championship tables.';
+    body=`<div class="grid2"><div class="panel"><h3>Drivers</h3><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Wins</th><th>Pts</th></tr>
+     ${standingsD().map((d,i)=>`<tr class="${d.teamId==='P'?'me':''}"><td class="mono">${i+1}</td><td>${esc(d.name)}</td><td><span class="chip" style="background:${team(d.teamId).color}"></span>${team(d.teamId).short}</td><td class="mono">${d.wins}</td><td class="mono"><b>${d.points}</b></td></tr>`).join('')}</table></div></div>
+     <div class="panel"><h3>Teams</h3><div class="scroll"><table><tr><th>Pos</th><th>Team</th><th>Car</th><th>Pts</th></tr>
+     ${standingsT().map((x,i)=>`<tr class="${x.id==='P'?'me':''}"><td class="mono">${i+1}</td><td><span class="chip" style="background:${x.color}"></span>${esc(x.name)}</td><td class="mono">${carAvg(x).toFixed(1)}</td><td class="mono"><b>${x.points}</b></td></tr>`).join('')}</table></div>
+     ${G.seasonLog.length?`<div class="eyebrow" style="margin-top:12px">Past seasons</div>${G.seasonLog.map(s=>`<div class="mono" style="font-size:12px">S${s.season}: ${esc(s.champ)} / ${esc(s.team)} · you ${ord(s.me)}</div>`).join('')}`:''}</div></div>`;
+  }
+  app.innerHTML=topBar(page,sub)+body+bottomNav();
+  const mc=$('#mini');if(mc){const r=mc.getBoundingClientRect(),dpr=devicePixelRatio||1;mc.width=r.width*dpr;mc.height=r.height*dpr;const c=mc.getContext('2d');drawOutline(c,G.round,mc.width,mc.height,16*dpr,14*dpr,'#3a6273');drawOutline(c,G.round,mc.width,mc.height,16*dpr,9*dpr,'#1f2d36')}
+}
+function dcard(d,color){
+  const st=[['Pace',d.pace],['Racecraft',d.racecraft],['Tyre care',d.tyre],['Consistency',d.consistency],['Wet weather',d.wet]];
+  const mood=d.morale>70?['Happy','good']:d.morale>40?['Content','']:d.morale>20?['Unsettled','warn']:['Wants out','bad'];
+  return `<div class="panel dcard" style="--team:${color}"><div class="dhead"><span class="dnum">${d.num}</span><div><h3>${esc(d.name)}</h3><span class="muted">Age ${d.age} · ${money(d.salary)}/yr · Rating ${rating(d)}</span></div></div>
+   ${st.map(([n,v])=>`<div class="stat"><span class="muted">${n}</span><div class="bar"><i style="width:${v}%;background:${color}"></i></div><span class="mono">${v}</span></div>`).join('')}
+   <div class="stat"><span class="muted">Morale</span><div class="bar"><i style="width:${d.morale}%;background:var(--${mood[1]||'accent'})"></i></div><span class="mono">${d.morale}</span></div>
+   <div class="row" style="font-size:12px"><span class="${mood[1]}">${mood[0]}</span><span class="muted">· ${d.points} pts · ${d.wins} wins · ${d.podiums} podiums</span></div></div>`;
+}
+function wxStrip(arr,from,n){return `<div class="wxrow" title="Rain intensity per lap">${arr.slice(from,from+n).map(v=>`<i><b style="height:${Math.round(v*100)}%"></b></i>`).join('')}</div>`}
+function renderWeekend(){
+  const tr=track(),t=PT();
+  const steps=['Practice','Qualifying','Race'];const cur=W.phase==='practice'?0:1;
+  let body='';
+  if(W.phase==='practice'){
+    body=`<p class="muted" style="max-width:70ch">Each driver gets four practice runs. Move the sliders, run, and read the feedback. A better setup is worth up to nine tenths a lap.</p>
+    <div class="grid2">${t.drivers.map(id=>{const d=drv(id),s=W.setup[id];
+      return `<div class="panel stack"><div class="dhead"><span class="dnum" style="color:${t.color}">${d.num}</span><h3>${esc(d.name)}</h3><span class="muted mono" style="margin-left:auto">Runs ${s.runs}/4</span></div>
+       ${SL.map((sl,i)=>`<div class="slider"><div class="row" style="justify-content:space-between"><label class="eyebrow" for="s-${id}-${i}">${sl[0]}</label><span class="mono" id="sv-${id}-${i}">${s.v[i]}</span></div>
+        <input type="range" min="0" max="100" value="${s.v[i]}" id="s-${id}-${i}" data-act="slide" data-id="${id}" data-i="${i}">
+        <div class="ends"><span>${sl[1]}</span><span>${sl[2]}</span></div>
+        ${s.fb?`<div class="fb"><b class="${s.fb[i].cls}">${s.fb[i].g}</b>${s.fb[i].dir?` · wants ${s.fb[i].dir}`:''}</div>`:''}</div>`).join('')}
+       <div><div class="row" style="justify-content:space-between"><span class="eyebrow">Setup opinion (last run)</span><span class="mono">${s.conf==null?'—':Math.round(s.conf*100)+'%'}</span></div><div class="bar" style="margin-top:4px"><i style="width:${(s.conf||0)*100}%"></i></div></div>
+       <button class="ghost" data-act="run" data-id="${id}" ${s.runs>=4?'disabled':''}>Run practice stint</button></div>`}).join('')}</div>
+     <div class="panel row" style="margin-top:16px;justify-content:space-between"><div><div class="eyebrow">Qualifying forecast</div>${W.wet[0]>.15?'<span class="warn">Wet</span>':'Dry'}</div><button class="btn" data-act="quali">Go to qualifying ›</button></div>`;
+  }else{
+    body=`<div class="grid2"><div class="panel"><h3>Qualifying</h3><p class="muted" style="margin:4px 0 8px">${W.wet[0]>.15?'Wet session':'Dry session'}</p><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Time</th><th>Gap</th></tr>
+     ${W.quali.map((q,i)=>{const d=drv(q.id),tm=team(d.teamId);return `<tr class="${tm.id==='P'?'me':''}"><td class="mono">${i+1}</td><td>${esc(d.name)}</td><td><span class="chip" style="background:${tm.color}"></span>${tm.short}</td><td class="mono ${i===0?'purple':''}">${fmtT(q.t)}</td><td class="mono muted">${i?'+'+(q.t-W.quali[0].t).toFixed(3):''}</td></tr>`}).join('')}</table></div></div>
+     <div class="stack"><div class="panel stack"><h3>Race strategy</h3>
+      <div><div class="eyebrow">Forecast, rain per lap (${tr.laps} laps)</div>${wxStrip(W.wet,0,tr.laps)}</div>
+      ${t.drivers.map(id=>{const d=drv(id),p=W.quali.findIndex(q=>q.id===id)+1;return `<div class="stack" style="gap:8px"><div class="row" style="justify-content:space-between"><b>${esc(d.name)}</b><span class="mono">Starts ${ord(p)}</span></div>
+       <div class="boxrow">${TK.map(k=>`<button class="tbtn ${W.startTyre[id]===k?'on':''}" style="--c:${TYRES[k].col}" data-act="stTyre" data-id="${id}" data-v="${k}" title="${TYRES[k].n}">${TYRES[k].k}</button>`).join('')}<span class="muted" style="font-size:12px">${TYRES[W.startTyre[id]].n}</span></div>
+       <div class="slider"><div class="row" style="justify-content:space-between"><label class="eyebrow" for="sf-${id}">Starting fuel</label><span class="mono" id="sfv-${id}">${W.startFuel[id]} laps</span></div><input type="range" min="3" max="${tr.cap}" step="0.5" value="${W.startFuel[id]}" id="sf-${id}" data-act="sfuel" data-id="${id}"></div></div>`}).join('')}
+      <div class="muted" style="font-size:12px">The tank holds ${tr.cap} laps, so everyone stops at least once. Each lap of fuel costs about 0.035s per lap in weight. Soft tyres are a second faster but last about 11 laps, mediums about 16, hards about 23.</div>
+      <button class="btn" data-act="race">Start the race ›</button></div></div></div>`;
+  }
+  app.innerHTML=topBar(`Race weekend`,`Round ${G.round+1}: ${tr.name}`)+`<div class="steps">${steps.map((s,i)=>`<span class="${i===cur?'on':''}">${s}</span>`).join('')}</div>`+body;
+}
+
+/* ---------- race view ---------- */
+function panHTML(c,i){
+  const side=i?'r':'l';
+  return `<div class="pan ${side}" style="--tc:${c.team.color}" id="pan${i}">
+   <div class="pop" id="pop${i}" hidden></div>
+   <div class="gaps"><span class="pc" id="p${i}-ap">–</span><span id="p${i}-ag" class="good">—</span><span class="ln"></span><span id="p${i}-bg">—</span><span class="pc" id="p${i}-bp">–</span></div>
+   <div class="tabs3"><button class="pit" id="p${i}-tpit" data-act="pop" data-c="${i}" data-v="pit">Pit</button><button id="p${i}-tcond" data-act="pop" data-c="${i}" data-v="cond">Condition</button><button id="p${i}-tstrat" data-act="pop" data-c="${i}" data-v="strat">Strategy</button></div>
+   <div class="main">
+    <div class="who"><b id="p${i}-pos">${ord(c.grid)}</b><span>${esc(c.d.name.split(' ')[1])} <span class="muted">#${c.d.num}</span></span></div>
+    <div class="sec"><label>Last</label><span id="p${i}-last">—</span><label>Pace</label><span id="p${i}-pace">—</span><label>Mode</label><span id="p${i}-mode">—</span></div>
+    <div class="gauge" id="p${i}-g"><div id="p${i}-gk">M</div><small id="p${i}-gw">100%</small></div>
+    <div class="fuel"><div><label>Fuel</label><b id="p${i}-fl">—</b><small id="p${i}-fs">—</small></div><div class="fb2"><i id="p${i}-fb"></i></div></div>
+   </div></div>`;
+}
+function popHTML(i,kind){
+  const c=RS.mineCars[i],tr=RS.tr;
+  if(kind==='pit')return `<h4>Pit stop · ${esc(c.d.name)}</h4>
+    <div><div class="lab">Tyres</div><div class="boxrow" style="margin-top:6px">${TK.map(k=>`<button class="tbtn" id="q${i}-t${k}" style="--c:${TYRES[k].col}" data-act="boxtyre" data-c="${i}" data-v="${k}" title="${TYRES[k].n}">${TYRES[k].k}</button>`).join('')}<button class="tbtn keep" id="q${i}-tkeep" data-act="boxtyre" data-c="${i}" data-v="keep">Keep</button></div></div>
+    <div class="slider"><div class="row" style="justify-content:space-between"><label class="lab" for="q${i}-fuel">Refuel to</label><span class="mono" id="q${i}-fv"></span></div><input type="range" min="0" max="${tr.cap}" step="0.5" id="q${i}-fuel" data-act="pfuel" data-c="${i}"></div>
+    <label class="chk"><input type="checkbox" id="q${i}-rep" data-act="rep" data-c="${i}"> Repair all parts <span class="muted" id="q${i}-rt"></span></label>
+    <div class="row" style="justify-content:space-between"><span class="mono muted" id="q${i}-est"></span><button class="boxbtn" id="q${i}-box" data-act="box" data-c="${i}">Box this lap</button></div>
+    <div class="eng" id="q${i}-eng"></div>`;
+  if(kind==='cond')return `<h4>Car condition</h4>${PARTS.map(([k,n])=>`<div class="prow"><span>${n}</span><div class="bar"><i id="q${i}-c${k}"></i></div><span class="mono" id="q${i}-cv${k}"></span></div>`).join('')}
+    <p class="muted" style="font-size:12px;margin:0">Engine mode wears the engine and gearbox. Driving style wears the brakes and suspension. Parts under 50% are at risk of failing.</p>`;
+  return `<h4>Strategy</h4>
+    <div><div class="lab">Driving style</div><div class="segs" style="margin-top:6px">${['Conserve','Standard','Attack'].map((n,k)=>`<button class="seg" id="q${i}-m${k}" data-act="mode" data-c="${i}" data-v="${k}">${n}</button>`).join('')}</div><p class="muted" style="font-size:12px;margin:4px 0 0">Attack is faster and better at overtaking, but wears tyres and brakes and risks mistakes.</p></div>
+    <div><div class="lab">Engine mode</div><div class="segs" style="margin-top:6px">${['Lean','Balanced','Rich'].map((n,k)=>`<button class="seg" id="q${i}-e${k}" data-act="eng" data-c="${i}" data-v="${k}">${n}</button>`).join('')}</div><p class="muted" style="font-size:12px;margin:4px 0 0">Rich burns 18% more fuel for a quarter second a lap. Lean saves 15% and costs three tenths.</p></div>`;
+}
+function renderRace(){
+  const tr=RS.tr,mine=RS.cars.filter(c=>c.mine);RS.mineCars=mine;
+  app.innerHTML=`<div class="rv">
+   <div class="stage" id="stage"><canvas id="cv" aria-label="Race track view"></canvas>
+    <div class="rtop"><div class="wxi" id="wxi" title="Weather">☀</div><div><div class="eyebrow">Water on track</div><span id="wxt" class="mono" style="font-size:12px">Dry</span><div class="bar"><i id="wxb" style="background:#3d8bff"></i></div></div>
+     <div class="grip"><div class="eyebrow">Track grip</div><span id="grt" class="mono" style="font-size:12px">Low</span><div class="bar"><i id="grb" style="background:var(--go)"></i></div></div>
+     <div><div class="eyebrow">${tr.name}</div><span class="mono" style="font-size:12px">Round ${G.round+1}</span></div></div>
+    <canvas class="mini" id="mini" aria-hidden="true"></canvas>
+    <div class="scb" id="scb" hidden>Safety car</div>
+    <div class="lbl" id="lbl"><div class="box"><span class="pos" id="lp">1st</span><span class="nm"><b id="ln">—</b><small id="ls">—</small></span><span class="ty" id="lt"></span></div><div class="stem"></div></div>
+    <div class="ntag" id="na"></div><div class="ntag" id="nb"></div>
+    <div class="comm" id="comm"></div>
+    <div class="over" id="over" hidden><div class="stack" style="align-items:center"><h2>Chequered flag</h2><button class="btn" data-act="results">See results ›</button></div></div>
+   </div>
+   <div class="stand" id="stand"></div>
+   ${mine.map(panHTML).join('')}
+   <div class="ctr"><div class="cam"><button data-act="cam" data-v="follow" id="cam-follow">Follow</button><button data-act="cam" data-v="track" id="cam-track">Track</button></div>
+    <div class="lap"><b id="lapc">LAP 1/${tr.laps}</b><div class="bar"><i id="lapb"></i></div></div>
+    <div class="spd" role="group" aria-label="Simulation speed">${[[0,'❚❚'],[3,'×1'],[10,'×4'],[25,'×12'],[60,'×30']].map(([s,l])=>`<button class="${RS.speed===s?'on':''}" data-act="speed" data-v="${s}" aria-label="${s?l+' speed':'Pause'}">${l}</button>`).join('')}<button class="end" data-act="simend" title="Simulate to the finish">End ⏭</button></div></div>
+  </div>
+  <div class="panel racelog"><div class="eyebrow" style="margin-bottom:6px">Race control and team radio</div><div class="feed" id="feed"></div></div>`;
+  sizeCanvas();UI.last=performance.now();UI.lastUi=0;UI.raf=requestAnimationFrame(loop);updRaceUI();
+}
+function sizeCanvas(){
+  const cv=$('#cv');if(!cv)return;const dpr=Math.min(2,devicePixelRatio||1),r=cv.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;UI.dpr=dpr;
+  const m=$('#mini'),mr=m.getBoundingClientRect();m.width=mr.width*dpr;m.height=mr.height*dpr;UI.miniBg=null;
+}
+function loop(now){
+  if(!RS||G.screen!=='weekend')return;
+  const real=Math.min(.1,(now-UI.last)/1000);UI.last=now;
+  let sim=real*RS.speed;while(sim>0&&!RS.over){const d=Math.min(.25,sim);step(d);sim-=d}
+  drawRace(real);
+  if(now-UI.lastUi>160){UI.lastUi=now;updRaceUI();drawMini()}
+  UI.raf=requestAnimationFrame(loop);
+}
+function carPos(c,pa){
+  if(c.pitT>0&&c.pitTot){const u=1-c.pitT/c.pitTot,f=Math.floor(c.dist)+u*PL,F=frame(pa,f),o=RS.tr.ps*(TW/2+1.5)*Math.min(1,u*8,(1-u)*8);return{x:F.x+F.nx*o,y:F.y+F.ny*o,a:F.ang}}
+  const F=frame(pa,c.dist);return{x:F.x+F.nx*c.lat,y:F.y+F.ny*c.lat,a:F.ang};
+}
+function drawCar(ctx,x,y,a,k,col,sel,mine){
+  const L=1.75*k,Wd=.72*k;
+  ctx.save();ctx.translate(x,y);ctx.rotate(a);
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(-L/2+k*.12,-Wd/2+k*.14,L,Wd);
+  ctx.fillStyle='#111';for(const sx of[-.32,.3])for(const sy of[-.5,.5])ctx.fillRect(sx*L-L*.08,sy*Wd-Wd*.16,L*.16,Wd*.32);
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-L*.46,-Wd*.3);ctx.lineTo(L*.2,-Wd*.24);ctx.lineTo(L*.5,-Wd*.07);ctx.lineTo(L*.5,Wd*.07);ctx.lineTo(L*.2,Wd*.24);ctx.lineTo(-L*.46,Wd*.3);ctx.closePath();ctx.fill();
+  ctx.fillRect(-L*.25,-Wd*.4,L*.34,Wd*.8);
+  ctx.fillStyle='#1b1f24';ctx.fillRect(L*.43,-Wd*.5,L*.06,Wd);ctx.fillRect(-L*.52,-Wd*.44,L*.08,Wd*.88);
+  ctx.fillStyle=mine?'#ffe14a':'#f2f2f2';ctx.beginPath();ctx.arc(0,0,Wd*.14,0,7);ctx.fill();
+  ctx.restore();
+  if(sel){ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=Math.max(1.5,k*.08);ctx.beginPath();ctx.arc(x,y,L*.75,0,7);ctx.stroke()}
+}
+function drawRace(dtReal){
+  const cv=$('#cv');if(!cv)return;const ctx=cv.getContext('2d'),w=cv.width,h=cv.height,dpr=UI.dpr;
+  const wd=world(G.round),pa=path(G.round),cam=UI.cam;
+  for(const c of RS.cars)c.lat+=(c.latT-c.lat)*Math.min(1,dtReal*2);
+  const tgt=RS.cars[UI.sel]||RS.cars[0];const tp=carPos(tgt,pa);
+  const fitK=Math.min(w/(wd.x1-wd.x0-14),h/(wd.y1-wd.y0-14));
+  const follow=cam.mode==='follow';
+  const tk=follow?Math.max(fitK*1.8,w/62):fitK,tx=follow?tp.x:(wd.x0+wd.x1)/2,ty=follow?tp.y:(wd.y0+wd.y1)/2;
+  if(!cam.k){cam.k=tk;cam.x=tx;cam.y=ty}
+  const a=Math.min(1,dtReal*3.5);cam.k+=(tk-cam.k)*a;
+  if(cam.lastSel!==UI.sel||cam.lastMode!==cam.mode){cam.blend=1;cam.lastSel=UI.sel;cam.lastMode=cam.mode}
+  if(cam.blend>0){cam.blend=Math.max(0,cam.blend-dtReal*1.6);cam.x+=(tx-cam.x)*a;cam.y+=(ty-cam.y)*a}else{cam.x=tx;cam.y=ty}
+  const k=cam.k,ox=w/2-(cam.x-wd.x0)*k,oy=h/2-(cam.y-wd.y0)*k;
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=wd.bg;ctx.fillRect(0,0,w,h);
+  ctx.imageSmoothingEnabled=true;ctx.setTransform(k/wd.PX,0,0,k/wd.PX,ox,oy);ctx.drawImage(wd.cv,0,0);ctx.setTransform(1,0,0,1,0,0);
+  const S=(x,y)=>[(x-wd.x0)*k+ox,(y-wd.y0)*k+oy];
+  const o=order(),zoomed=k>fitK*1.35;
+  UI.sp={};
+  for(let i=o.length-1;i>=0;i--){const c=o[i];if(c.dnf&&c.lapsDone<RS.leaderLap-1)continue;
+    const p=carPos(c,pa);const[sx,sy]=S(p.x,p.y);UI.sp[c.id]=[sx/dpr,sy/dpr];
+    if(sx<-60||sy<-60||sx>w+60||sy>h+60)continue;
+    const col=c.dnf?'#555':c.team.color;
+    if(zoomed)drawCar(ctx,sx,sy,p.a,k,col,c===tgt,c.mine);
+    else{const r=(c.mine?8:6.5)*dpr;ctx.beginPath();ctx.arc(sx,sy,r,0,7);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=(c===tgt?2.5:1.2)*dpr;ctx.strokeStyle=c===tgt?'#fff':'#0b151c';ctx.stroke();
+      ctx.fillStyle='#08131a';ctx.font=`700 ${8*dpr}px "JetBrains Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i+1,sx,sy+.5)}
+  }
+  if(RS.w>.04){ctx.fillStyle=`rgba(40,80,120,${RS.w*.18})`;ctx.fillRect(0,0,w,h);ctx.strokeStyle='rgba(200,220,255,.28)';ctx.lineWidth=dpr;ctx.beginPath();
+    for(let n=0;n<RS.w*160;n++){const x=Math.random()*w,y=Math.random()*h;ctx.moveTo(x,y);ctx.lineTo(x-4*dpr,y+14*dpr)}ctx.stroke()}
+  // floating labels
+  const lbl=$('#lbl'),sp=UI.sp[tgt.id];
+  if(sp&&!tgt.dnf){lbl.style.transform=`translate(${sp[0]-14}px,${sp[1]-lbl.offsetHeight-6}px)`}else lbl.style.transform='translate(-9999px,0)';
+  const pos=o.indexOf(tgt);
+  [['na',o[pos-1]],['nb',o[pos+1]]].forEach(([id,c],j)=>{const el=$('#'+id),s=c&&!c.dnf&&UI.sp[c.id];
+    if(s&&zoomed&&Math.hypot(s[0]-sp[0],s[1]-sp[1])<400){el.style.setProperty('--tc',c.team.color);el.textContent=ord(pos+(j?2:0));el.style.transform=`translate(${s[0]-10}px,${s[1]-38}px)`}else el.style.transform='translate(-9999px,0)'});
+}
+function drawMini(){
+  const m=$('#mini');if(!m)return;const ctx=m.getContext('2d'),w=m.width,h=m.height,dpr=UI.dpr;
+  ctx.clearRect(0,0,w,h);
+  const T=drawOutline(ctx,G.round,w,h,10*dpr,4*dpr,'rgba(255,255,255,.85)');
+  const pa=path(G.round),o=order();
+  for(let i=o.length-1;i>=0;i--){const c=o[i];if(c.dnf)continue;const p=carPos(c,pa);const[x,y]=T([p.x,p.y]);
+    ctx.beginPath();ctx.arc(x,y,(c.mine?6:5)*dpr,0,7);ctx.fillStyle=c.team.color;ctx.fill();ctx.lineWidth=dpr;ctx.strokeStyle=c.mine?'#fff':'#0b151c';ctx.stroke();
+    ctx.fillStyle='#08131a';ctx.font=`700 ${6.5*dpr}px "JetBrains Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i+1,x,y+.5)}
+}
+function gapStr(a,b){if(!a||!b)return '—';const d=a.dist-b.dist;if(d>=1)return `+${Math.floor(d)}L`;return '+'+(d*b.lt).toFixed(1)}
+function tring(c){const ty=TYRES[c.tyre.c];return `<span class="tring" style="--c:${ty.col};--w:${Math.round(100-c.tyre.wear)}"><b>${ty.k}</b></span>`}
+function estStop(c){const tr=RS.tr;let work=0;if(c.boxSel!=='keep')work=2.8;const tgt=c.fuelT??fuelTo(c,tr),add=Math.max(0,tgt-c.fuel);if(add>0)work=Math.max(work,1.5+add*.3);if(c.rep)work+=PARTS.reduce((s,[k])=>s+100-c.pc[k],0)*.02;work=Math.max(2,work);return{work,total:Math.max(3,tr.pit*(RS.sc?.55:1)-PL*tr.base)+work+PL*tr.base}}
+function updRaceUI(){
+  const o=order(),lead=o[0],tr=RS.tr;
+  $('#lapc').textContent=`LAP ${Math.min(RS.leaderLap+1,RS.laps)}/${RS.laps}`;$('#lapb').style.width=(RS.leaderLap/RS.laps*100)+'%';
+  $('#wxi').textContent=RS.w<.08?(RS.wet.slice(RS.leaderLap,RS.leaderLap+3).some(v=>v>.1)?'☁':'☀'):'☂';
+  $('#wxt').textContent=RS.w<.08?'Dry':RS.w<.4?'Damp':RS.w<.75?'Wet':'Soaked';$('#wxb').style.width=RS.w*100+'%';
+  const g=grip();$('#grt').textContent=g<.5?'Low':g<.8?'Medium':'High';$('#grb').style.width=g*100+'%';
+  $('#scb').hidden=!RS.sc;$('#over').hidden=!RS.over;
+  for(const id of['follow','track'])$('#cam-'+id).classList.toggle('on',UI.cam.mode===id);
+  const cm=RS.comm||(RS.feed[0]&&RS.feed[0].text)||'';$('#comm').textContent=cm;$('#comm').hidden=!cm;
+  // standings
+  $('#stand').innerHTML=`<div class="sh"><span>Standings</span><span class="muted">Tyre · Stops · Gap</span></div>`+o.map((c,i)=>{
+    const d=c.prevPos-i,ar=d>0?'<span class="ar good">▲</span>':d<0?'<span class="ar bad">▼</span>':'<span></span>';
+    const gap=i===0?(c.fin?'FIN':'–'):c.dnf?'<span class="tag out">OUT</span>':c.pitT>0?'<span class="tag pit">PIT</span>':gapStr(lead,c);
+    const idx=RS.cars.indexOf(c);
+    return `<button class="srow ${c.mine?'me':''} ${idx===UI.sel?'sel':''} ${c.dnf?'out':''}" data-act="selcar" data-v="${idx}"><span class="mono">${i+1}</span><span class="c" style="background:${c.team.color}"></span><span>${esc(c.d.name.split(' ')[1])}</span>${ar}${tring(c)}<span class="mono muted" style="text-align:center">${c.stops}</span><span class="g">${gap}</span></button>`}).join('');
+  // label for selected car
+  const t=RS.cars[UI.sel]||lead,tp=o.indexOf(t);
+  $('#lbl').style.setProperty('--tc',t.team.color);$('#lp').textContent=ord(tp+1);$('#ln').textContent=t.d.name.split(' ')[1];
+  $('#ls').innerHTML=`PACE <span class="${(o[tp-1]&&t.lt<o[tp-1].lt)?'good':'bad'}">${tp>0?sgn(t.lt-o[tp-1].lt):'leader'}</span> · LAP ${Math.min(t.lapsDone+1,RS.laps)}`;
+  $('#lt').innerHTML=`${tring(t)} ${Math.round(100-t.tyre.wear)}%`;
+  // driver panels
+  RS.mineCars.forEach((c,i)=>{
+    const pos=o.indexOf(c),a=o[pos-1],b=o[pos+1],lapsLeft=RS.laps-c.lapsDone;
+    $(`#p${i}-pos`).textContent=c.dnf?'OUT':ord(pos+1);
+    const ap=$(`#p${i}-ap`),bp=$(`#p${i}-bp`);ap.textContent=a?pos:'–';ap.style.setProperty('--tc',a?a.team.color:'#888');bp.textContent=b?pos+2:'–';bp.style.setProperty('--tc',b?b.team.color:'#888');
+    $(`#p${i}-ag`).textContent=a&&!c.dnf?gapStr(a,c):'—';$(`#p${i}-bg`).textContent=b&&!b.dnf&&!c.dnf?gapStr(c,b):'—';
+    $(`#p${i}-last`).textContent=c.fin?'Finished':c.pitT>0?'In pits':fmtT(c.last);
+    const pc=$(`#p${i}-pace`);if(a&&!c.dnf){const d=c.lt-a.lt;pc.textContent=sgn(d);pc.className=d<0?'good':'bad'}else{pc.textContent='—';pc.className=''}
+    $(`#p${i}-mode`).textContent=['Conserve','Standard','Attack'][c.mode];
+    const ty=TYRES[c.tyre.c],gg=$(`#p${i}-g`);gg.style.setProperty('--c',ty.col);gg.style.setProperty('--w',Math.round(100-c.tyre.wear));$(`#p${i}-gk`).textContent=ty.k;$(`#p${i}-gw`).textContent=Math.round(100-c.tyre.wear)+'%';
+    $(`#p${i}-fl`).textContent=c.fuel.toFixed(1)+' laps';const sur=c.fuel-lapsLeft;const fs=$(`#p${i}-fs`);fs.textContent=c.fin?'':(sur>=0?'+':'')+sur.toFixed(1);fs.className=sur>=0?'good':'bad';
+    $(`#p${i}-fb`).style.height=(c.fuel/tr.cap*100)+'%';
+    const tp=$(`#p${i}-tpit`);tp.classList.toggle('boxing',!!c.box);tp.textContent=c.box?'Boxing':'Pit';
+    for(const v of['pit','cond','strat'])$(`#p${i}-t${v}`).classList.toggle('on',UI.pop[i]===v);
+    const pop=$(`#pop${i}`);
+    if(UI.pop[i]==='pit'){
+      for(const k of[...TK,'keep'])$(`#q${i}-t${k}`).classList.toggle('on',c.boxSel===k);
+      const fsl=$(`#q${i}-fuel`),fv=c.fuelT??fuelTo(c,tr);if(document.activeElement!==fsl)fsl.value=fv;$(`#q${i}-fv`).textContent=`${(+fv).toFixed(1)} laps (+${Math.max(0,fv-c.fuel).toFixed(1)})`;
+      $(`#q${i}-rep`).checked=c.rep;$(`#q${i}-rt`).textContent=`(+${(PARTS.reduce((s,[k])=>s+100-c.pc[k],0)*.02).toFixed(1)}s)`;
+      const e=estStop(c);$(`#q${i}-est`).textContent=`Stationary ${e.work.toFixed(1)}s · total ~${e.total.toFixed(0)}s`;
+      const bx=$(`#q${i}-box`);bx.classList.toggle('on',!!c.box);bx.textContent=c.box?'Cancel box':'Box this lap';bx.disabled=!!(c.dnf||c.fin);
+      const call=!c.dnf&&!c.fin?engineerCall(c,tr):null;
+      $(`#q${i}-eng`).textContent=c.dnf?`Retired: ${c.dnf}.`:c.fin?'Car is home.':call?`Engineer: ${call.why}. Suggest ${call.c==='keep'?'keeping these tyres':TYRES[call.c].n}${call.rep?' with repairs':''}, fuel to ${call.fuel} laps.`:`Engineer: stay out. ${lapsLeft} laps to go.`;
+    }else if(UI.pop[i]==='cond'){
+      for(const[k]of PARTS){const v=Math.max(0,c.pc[k]),el=$(`#q${i}-c${k}`);el.style.width=v+'%';el.style.background=v<38?'var(--bad)':v<60?'var(--warn)':'var(--good)';$(`#q${i}-cv${k}`).textContent=Math.round(v)+'%'}
+    }else if(UI.pop[i]==='strat'){
+      for(let k=0;k<3;k++){$(`#q${i}-m${k}`).classList.toggle('on',c.mode===k);$(`#q${i}-e${k}`).classList.toggle('on',c.eng===k)}
+    }
+  });
+  $('#feed').innerHTML=RS.feed.slice(0,40).map(f=>`<div class="${f.cls}">L${f.lap} · ${esc(f.text)}</div>`).join('');
+}
+function openPop(i,kind){
+  UI.pop[i]=UI.pop[i]===kind?null:kind;const pop=$(`#pop${i}`);
+  if(UI.pop[i]){pop.innerHTML=popHTML(i,kind);pop.hidden=false}else{pop.hidden=true;pop.innerHTML=''}
+  updRaceUI();
+}
+function renderResults(){
+  const L=G.last,f=L.fin;
+  const rows=[['Sponsorship',f.sponsor],[`Sponsor bonus (${ord(L.target)} target)`,f.bonus],['Prize money',f.prize],['Driver salaries',f.salaries],['Running costs',f.running]];if(f.fine)rows.push(['Scrutineering fine',f.fine]);
+  app.innerHTML=topBar('Race result',`Round ${L.round+1}: ${L.track}`)+`<h2 style="margin-bottom:16px">${L.track} Grand Prix</h2>
+  <div class="grid2"><div class="panel"><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Grid</th><th>Stops</th><th>Best lap</th><th>Pts</th></tr>
+   ${L.res.map(r=>{const d=drv(r.id),t=team(d.teamId)||{color:'#888',short:'—'};return `<tr class="${d.teamId==='P'?'me':''}"><td class="mono">${r.dnf?'DNF':r.pos}</td><td>${esc(d.name)}${r.dnf?` <span class="muted" style="font-size:11px">${esc(r.dnf)}</span>`:''}</td><td><span class="chip" style="background:${t.color}"></span>${t.short}</td><td class="mono">${r.grid}</td><td class="mono">${r.stops}</td><td class="mono ${r.fl?'purple':''}">${fmtT(r.best)}</td><td class="mono"><b>${r.pts||''}</b></td></tr>`}).join('')}</table></div></div>
+  <div class="stack"><div class="panel"><h3>Team finances</h3><table>${rows.map(([n,v])=>`<tr><td>${n}</td><td class="mono ${v<0?'bad':'good'}" style="text-align:right">${money(v)}</td></tr>`).join('')}<tr><td><b>Net</b></td><td class="mono" style="text-align:right"><b>${money(L.net)}</b></td></tr></table>
+   ${f.project?`<p class="warn" style="margin-bottom:0">${esc(f.project)}</p>`:''}</div>
+   <div class="panel stack"><div><div class="eyebrow">Press pen</div><h3 style="margin-top:4px">“${esc(L.q.q.replace('{best}',drv(L.bestId).name))}”</h3></div>
+    ${L.answered==null?`<div class="qa">${L.q.a.map((a,i)=>`<button data-act="answer" data-v="${i}">${esc(a[0].replace('{best}',drv(L.bestId).name))}</button>`).join('')}</div>`:`<p class="muted" style="margin:0">You said: “${esc(L.q.a[L.answered][0].replace('{best}',drv(L.bestId).name))}”</p>`}
+    <div class="muted" style="font-size:12px">${PT().drivers.map(id=>`${drv(id).name}: morale ${drv(id).morale}`).join(' · ')}</div>
+    <button class="btn" data-act="next" ${L.answered==null?'disabled':''}>${G.round>=TRACKS.length?'Season review ›':'Continue ›'}</button></div></div></div>`;
+}
+function renderSeason(){
+  const sd=standingsD(),st=standingsT(),pos=st.findIndex(t=>t.id==='P');
+  app.innerHTML=topBar('Season review',`Season ${G.season} complete`)+`<h1 style="font-size:clamp(36px,6vw,64px);margin:8px 0 16px">${esc(sd[0].name)} is champion</h1>
+   <div class="grid2"><div class="panel"><h3>Final teams' standings</h3><table>${st.map((t,i)=>`<tr class="${t.id==='P'?'me':''}"><td class="mono">${i+1}</td><td><span class="chip" style="background:${t.color}"></span>${esc(t.name)}</td><td class="mono"><b>${t.points}</b></td></tr>`).join('')}</table></div>
+   <div class="panel stack"><h3>Your season</h3><p style="margin:0">You finished <b>${ord(pos+1)}</b> in the teams' championship, earning ${money(PRIZE[pos]*1e6)} in end-of-season prize money.</p>
+   <p class="muted" style="margin:0">New regulations next season reduce every team's part performance by 7%. Drivers age: young ones improve, veterans fade. Grey-area parts become legal. A driver with morale under 20 will quit.</p>
+   <button class="btn" data-act="season">Start season ${G.season+1} ›</button></div></div>`;
+}
+
+/* ---------- input ---------- */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');
+  if(!el){if(e.target.id==='cv'&&RS)pickCar(e);return}
+  const a=el.dataset.act,v=el.dataset.v;
+  const pc=()=>RS.mineCars[+el.dataset.c];
+  switch(a){
+    case 'pickteam':UI.picking=true;UI.pickIdx=7;UI.preview=null;render();break;
+    case 'back':UI.picking=false;render();break;
+    case 'pickidx':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.pickIdx=+v;render();break}
+    case 'color':{const n=$('#tname');if(n)UI.newName=n.value.trim();UI.newColor=v;render();break}
+    case 'new':{const n=$('#tname');if(n)UI.newName=n.value.trim();newGame(UI.pickIdx??7,UI.newName,UI.newColor);UI.picking=false;UI.tab='overview';render();break}
+    case 'continue':loadSave();if(G.screen==='weekend'&&W&&W.phase==='race'){RS=null;W.phase='quali'}render();break;
+    case 'quit':G=null;W=null;RS=null;render();break;
+    case 'tab':UI.tab=v;render();break;
+    case 'weekend':startWeekend();break;
+    case 'design':startDesign(v);break;
+    case 'sign':sign(v,+el.dataset.s);break;
+    case 'run':practiceRun(el.dataset.id);break;
+    case 'quali':runQuali();break;
+    case 'stTyre':W.startTyre[el.dataset.id]=v;save();render();break;
+    case 'race':startRace();break;
+    case 'speed':RS.speed=+v;document.querySelectorAll('[data-act=speed]').forEach(b=>b.classList.toggle('on',b===el));break;
+    case 'simend':{let n=0;while(!RS.over&&n<400000){step(.5);n++}updRaceUI();break}
+    case 'results':finishRace();break;
+    case 'cam':UI.cam.mode=v;updRaceUI();break;
+    case 'selcar':UI.sel=+v;UI.cam.mode='follow';updRaceUI();break;
+    case 'pop':openPop(+el.dataset.c,v);break;
+    case 'mode':pc().mode=+v;updRaceUI();break;
+    case 'eng':pc().eng=+v;updRaceUI();break;
+    case 'boxtyre':{const c=pc();c.boxSel=v;if(c.box)c.box.c=v;updRaceUI();break}
+    case 'rep':{const c=pc();c.rep=el.checked;if(c.box)c.box.rep=c.rep;updRaceUI();break}
+    case 'box':{const c=pc();c.box=c.box?null:{c:c.boxSel,rep:c.rep,fuel:c.fuelT??null};updRaceUI();break}
+    case 'answer':answer(+v);break;
+    case 'next':afterResults();break;
+    case 'season':newSeason();break;
+  }
+});
+function pickCar(e){
+  const r=e.target.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=-1,bd=40;
+  RS.cars.forEach((c,i)=>{const s=UI.sp[c.id];if(!s||c.dnf)return;const d=Math.hypot(s[0]-x,s[1]-y);if(d<bd){bd=d;best=i}});
+  if(best>=0){UI.sel=best;updRaceUI()}
+}
+document.addEventListener('input',e=>{
+  const el=e.target,a=el.dataset.act;
+  if(a==='slide'){const s=W.setup[el.dataset.id];s.v[+el.dataset.i]=+el.value;$(`#sv-${el.dataset.id}-${el.dataset.i}`).textContent=el.value;save()}
+  if(a==='sfuel'){W.startFuel[el.dataset.id]=+el.value;$(`#sfv-${el.dataset.id}`).textContent=el.value+' laps';save()}
+  if(a==='pfuel'){const c=RS.mineCars[+el.dataset.c];c.fuelT=+el.value;if(c.box)c.box.fuel=c.fuelT;updRaceUI()}
+  if(el.id==='tname')UI.newName=el.value.trim();
+});
+document.addEventListener('change',e=>{if(e.target.dataset.act==='dpart'){UI.dpart=e.target.value}});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(RS&&G&&G.screen==='weekend')sizeCanvas();else if(G&&G.screen==='hub'&&UI.tab==='overview')render()},150)});
+render();
+</script>
+
+</html>
