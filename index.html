@@ -226,19 +226,36 @@ select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);bor
 .feed{font-family:var(--f-mono);font-size:12px;display:flex;flex-direction:column;gap:3px;max-height:220px;overflow:auto}
 .feed div{color:var(--muted)}.feed div.me{color:var(--fg)}.feed div.hot{color:var(--warn)}
 .racelog{margin-top:12px}
+/* phones and tablets: track, transport controls and BOTH driver panels share one screen; standings follow below */
 @media (max-width:1200px){
-  .rv{display:flex;flex-direction:column;gap:10px}
-  .stage{height:clamp(320px,58vh,520px)}
-  .stand,.pan,.ctr,.pop{position:static;width:auto;max-height:none;transform:none}
-  .ctr{order:2;flex-wrap:wrap;height:auto}
-  .ctr .lap{flex:1}
-  .pan{order:3}
-  .stand{order:5}
-  .comm{bottom:10px;max-width:90%}
-  .mini{width:150px;height:115px}
-  .rtop>div{min-width:0;padding:5px 8px}.rtop .bar{width:70px}
+  .rv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+  .stage{grid-column:1/-1;grid-row:1;height:max(160px,calc(100dvh - var(--below,240px) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)))}
+  .ctr{grid-column:1/-1;grid-row:2;position:static;transform:none;height:auto;flex-wrap:nowrap;overflow-x:auto}
+  .pan{grid-row:3;position:static;width:auto}
+  .pan.l{grid-column:1}.pan.r{grid-column:2}
+  .stand{grid-column:1/-1;grid-row:4;position:static;width:auto;max-height:none}
+  .pop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:auto;max-height:58dvh;z-index:30;margin:0;box-shadow:0 10px 30px rgba(0,0,0,.5);background:rgba(13,24,31,.97)}
+  .comm{bottom:8px;max-width:90%}
+  .mini{width:130px;height:100px}
+  .rtop>div{min-width:0;padding:5px 8px}.rtop .bar{width:60px}
+  .ctr .cam{padding:4px}.ctr .cam button{width:40px}
+  .ctr .lap{min-width:0;flex:1;padding:4px 10px}.ctr .lap b{font-size:20px}
+  .ctr .spd button{width:36px;font-size:15px}.ctr .spd button.end{padding:0 8px;font-size:12px}
 }
-@media (max-width:520px){.rtop .grip{display:none}.ctr .spd button{width:44px}.pan .main{grid-template-columns:minmax(0,1fr) 58px 64px}.pan .sec{display:none}}
+@media (max-width:700px), (max-width:1200px) and (max-height:520px){
+  .pan .sec{display:none}
+  .pan .main{grid-template-columns:minmax(0,1fr) 46px 44px;gap:6px;padding:6px 8px}
+  .pan .who b{font-size:22px}.pan .who span{font-size:11px}
+  .gauge{width:44px;height:44px}.gauge>div{width:32px;height:32px;font-size:12px}.gauge small{font-size:9px;right:-4px}
+  .fuel{grid-template-columns:1fr 6px;gap:4px}.fuel b{font-size:10px}.fuel small{font-size:9px}.fuel .fb2{height:36px}
+  .pan .gaps{font-size:11px;padding:3px 6px;gap:4px}.pan .gaps .pc{width:16px}
+  .pan .tabs3{gap:2px;padding:3px}.pan .tabs3 button{padding:8px 2px;font-size:11px}
+  .rtop .grip{display:none}
+  .ctr .cam{display:none}
+  body.racing #app{padding-block:8px 24px}
+}
+.popx{position:absolute;top:6px;right:6px;background:none;border:0;color:var(--muted);font-size:16px;line-height:1;padding:6px 8px}
+.popx:hover{color:var(--fg)}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);padding:10px 16px;border-radius:3px;z-index:20;max-width:calc(100% - 32px)}
 .qa{display:flex;flex-direction:column;gap:8px}
 .qa button{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
@@ -863,6 +880,7 @@ function bottomNav(){
 function render(){
   cancelAnimationFrame(UI.raf);
   document.body.classList.toggle('hasnav',!!(G&&G.screen==='hub'));
+  document.body.classList.toggle('racing',!!(G&&G.screen==='weekend'&&W&&W.phase==='race'));
   if(!G){return UI.picking?renderTeamSelect():renderTitle()}
   if(G.screen==='hub')return renderHub();
   if(G.screen==='weekend'){if(W&&W.phase==='race'){if(!RS)startRace();else renderRace();return}return renderWeekend()}
@@ -1074,9 +1092,16 @@ function renderRace(){
   </div>
   <div class="panel racelog"><div class="eyebrow" style="margin-bottom:6px">Race control and team radio</div><div class="feed" id="feed"></div></div>`;
   sizeCanvas();UI.last=performance.now();UI.lastUi=0;UI.raf=requestAnimationFrame(loop);updRaceUI();
+  // panel heights can change once web fonts arrive: measure again
+  setTimeout(sizeCanvas,250);document.fonts&&document.fonts.ready.then(()=>{if(RS)sizeCanvas()});
 }
 function sizeCanvas(){
-  const cv=$('#cv');if(!cv)return;const dpr=Math.min(2,devicePixelRatio||1),r=cv.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;UI.dpr=dpr;
+  const cv=$('#cv');if(!cv)return;
+  // phones/tablets: size the track so the controls and both driver panels end exactly at the bottom of the screen
+  const st=$('.stage');
+  if(matchMedia('(max-width:1200px)').matches){const r=st.getBoundingClientRect(),pb=Math.max(...[...document.querySelectorAll('.pan')].map(p=>p.getBoundingClientRect().bottom),$('.ctr').getBoundingClientRect().bottom);
+    st.style.height=Math.max(160,Math.floor(innerHeight-(r.top+scrollY)-(pb-r.bottom)-6))+'px'}
+  else st.style.height='';const dpr=Math.min(2,devicePixelRatio||1),r=cv.getBoundingClientRect();cv.width=r.width*dpr;cv.height=r.height*dpr;UI.dpr=dpr;
   const m=$('#mini'),mr=m.getBoundingClientRect();m.width=mr.width*dpr;m.height=mr.height*dpr;UI.miniBg=null;
 }
 function loop(now){
@@ -1203,7 +1228,8 @@ function updRaceUI(){
 }
 function openPop(i,kind){
   UI.pop[i]=UI.pop[i]===kind?null:kind;const pop=$(`#pop${i}`);
-  if(UI.pop[i]){pop.innerHTML=popHTML(i,kind);pop.hidden=false}else{pop.hidden=true;pop.innerHTML=''}
+  if(UI.pop[i]&&matchMedia('(max-width:1200px)').matches){const j=1-i;if(UI.pop[j]){UI.pop[j]=null;const o=$(`#pop${j}`);if(o){o.hidden=true;o.innerHTML=''}}}
+  if(UI.pop[i]){pop.innerHTML=`<button class="popx" data-act="pop" data-c="${i}" data-v="${kind}" aria-label="Close">✕</button>`+popHTML(i,kind);pop.hidden=false}else{pop.hidden=true;pop.innerHTML=''}
   updRaceUI();
 }
 function renderResults(){
