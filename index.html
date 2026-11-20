@@ -252,12 +252,8 @@ select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);bor
   .pan .tabs3{gap:2px;padding:3px}.pan .tabs3 button{padding:8px 2px;font-size:11px}
   .rtop .grip{display:none}
   .ctr .cam{display:none}
-  .ctr .lap{padding:4px 8px}.ctr .lap b{font-size:17px;white-space:nowrap}.ctr .spd button{width:32px}.ctr .spd button.end{padding:0 6px}
   body.racing #app{padding-block:8px 24px}
 }
-.pan .main.flash-g{animation:flashg 1s ease-out}.pan .main.flash-r{animation:flashr 1s ease-out}
-@keyframes flashg{0%{background:#1f7a4a}100%{background:#18303a}}@keyframes flashr{0%{background:#7d2b2b}100%{background:#18303a}}
-@media (prefers-reduced-motion:reduce){.pan .main.flash-g,.pan .main.flash-r{animation:none}}
 .popx{position:absolute;top:6px;right:6px;background:none;border:0;color:var(--muted);font-size:16px;line-height:1;padding:6px 8px}
 .popx:hover{color:var(--fg)}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);padding:10px 16px;border-radius:3px;z-index:20;max-width:calc(100% - 32px)}
@@ -290,38 +286,6 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const ord=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
 const sgn=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(3);
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-
-/* ---------- sound: generated with Web Audio, no files ---------- */
-const SND={ctx:null,master:null,eng:null,muted:false,last:{}};
-try{SND.muted=localStorage.getItem('prm-mute')==='1'}catch(e){}
-function audio(){if(SND.ctx)return SND.ctx;const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;
-  try{SND.ctx=new A();SND.master=SND.ctx.createGain();SND.master.gain.value=SND.muted?0:.6;SND.master.connect(SND.ctx.destination)}catch(e){SND.ctx=null}return SND.ctx}
-function setMute(m){SND.muted=m;try{localStorage.setItem('prm-mute',m?'1':'0')}catch(e){}if(m)engineStop();else audio();if(SND.master)SND.master.gain.value=m?0:.6}
-function tone(f,t0,dur,type,vol,f2){const c=SND.ctx,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
-  g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.2,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g);g.connect(SND.master);o.start(t0);o.stop(t0+dur+.03)}
-function noise(t0,dur,vol,hp){const c=SND.ctx,b=c.createBuffer(1,Math.max(1,c.sampleRate*dur|0),c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  const src=c.createBufferSource();src.buffer=b;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1200;const g=c.createGain();g.gain.setValueAtTime(vol||.15,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
-  src.connect(f);f.connect(g);g.connect(SND.master);src.start(t0)}
-function sfx(kind){if(SND.muted||UI.silent)return;const c=audio();if(!c)return;if(c.state==='suspended')c.resume();const now=c.currentTime;
-  if(SND.last[kind]&&now-SND.last[kind]<.15)return;SND.last[kind]=now;
-  switch(kind){
-   case 'tick':tone(1400,now,.035,'square',.03);break;
-   case 'gain':tone(520,now,.12,'triangle',.16);tone(780,now+.09,.16,'triangle',.16);break;
-   case 'lose':tone(500,now,.16,'triangle',.12,320);break;
-   case 'pit':for(let i=0;i<4;i++)noise(now+i*.11,.07,.18,1800);break;
-   case 'flag':[523,659,784,1047].forEach((f,i)=>tone(f,now+i*.13,.24,'square',.06));break;
-   case 'sc':[740,554,740].forEach((f,i)=>tone(f,now+i*.2,.17,'sine',.12));break;
-   case 'fail':tone(150,now,.45,'sawtooth',.12,55);noise(now,.25,.1,300);break;
-  }}
-// engine: two detuned saws through a low-pass filter, revving and "shifting gear" in a loop; pitch follows sim speed
-function engineUpdate(on,speed,dt){const c=SND.ctx;if(!c||SND.muted||c.state!=='running'){if(!on)engineStop();return}
-  if(on&&!SND.eng){const o1=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();o1.type='sawtooth';o2.type='sawtooth';f.type='lowpass';f.frequency.value=650;g.gain.value=0;
-    o1.connect(f);o2.connect(f);f.connect(g);g.connect(SND.master);o1.start();o2.start();SND.eng={o1,o2,f,g,phase:0}}
-  if(!SND.eng)return;const e=SND.eng,t=c.currentTime;
-  if(!on){e.g.gain.setTargetAtTime(0,t,.12);return}
-  e.phase=(e.phase+dt*(.7+Math.min(speed,60)/40))%1;const fq=(68+Math.min(speed,60)*1.1)*(1+e.phase*.55);
-  e.o1.frequency.setTargetAtTime(fq,t,.03);e.o2.frequency.setTargetAtTime(fq*1.013,t,.03);e.g.gain.setTargetAtTime(.032,t,.2)}
-function engineStop(){if(!SND.eng)return;const e=SND.eng;SND.eng=null;try{e.g.gain.value=0;e.o1.stop();e.o2.stop()}catch(x){}}
 
 /* ---------- static data ---------- */
 const PARTS=[['frontWing','Front wing'],['brakes','Brakes'],['engine','Engine'],['suspension','Suspension'],['rearWing','Rear wing'],['gearbox','Gearbox']];
@@ -412,7 +376,7 @@ function save(){try{localStorage.setItem(SAVE,JSON.stringify({G:{...G,teams:unde
 function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return !!(s&&s.G)}catch(e){return false}}
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;G.teams=G.series[G.tier];migrate();return true}}catch(e){}return false}
 // older saves had a single G.project and no staff: upgrade them in place
-function migrate(){if(!G.projects){G.projects=G.project?[{...G.project,eng:null}]:[]}delete G.project;if(!G.staff)G.staff=[];if(!G.engMarket)G.engMarket=engMarket();if(!G.tut)G.tut={hub:true,race:true};if(!G.autoPit)G.autoPit={}}
+function migrate(){if(!G.projects){G.projects=G.project?[{...G.project,eng:null}]:[]}delete G.project;if(!G.staff)G.staff=[];if(!G.engMarket)G.engMarket=engMarket();if(!G.tut)G.tut={hub:true,race:true}}
 const SER=()=>SERIES[G.tier];
 
 const team=id=>{for(const s of G.series){const t=s.find(t=>t.id===id);if(t)return t}};
@@ -441,7 +405,7 @@ function previewTeams(){
 }
 function newGame(pick2,customName,customColor){
   const[pl,pi]=pick2;
-  G={season:1,round:0,budget:0,nid:1,tier:pl,series:[[],[],[]],drivers:{},market:[],projects:[],staff:[],engMarket:[],tut:{hub:false,race:false},autoPit:{},screen:'hub',last:null,history:[],seasonLog:[]};
+  G={season:1,round:0,budget:0,nid:1,tier:pl,series:[[],[],[]],drivers:{},market:[],projects:[],staff:[],engMarket:[],tut:{hub:false,race:false},screen:'hub',last:null,history:[],seasonLog:[]};
   const nm=nameGen();let num=2;
   previewTeams().forEach((list,lvl)=>list.forEach((pv,i)=>{
     const mine=lvl===pl&&i===pi,S=SERIES[lvl];
@@ -459,12 +423,6 @@ function newGame(pick2,customName,customColor){
 /* ---------- car model ---------- */
 function carScore(t,tr){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf*tr.w[k];return s}
 function carAvg(t){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf;return s/PARTS.length}
-// upgrades are worth less as a part approaches the limit of the technology (full value up to ~64, a quarter near 95)
-// each championship has a technology ceiling; upgrades shrink as a part nears its tier's ceiling
-const tierCeil=lvl=>SERIES[lvl].base+SERIES[lvl].spread+8;            // tier 1: 96, tier 2: 80, tier 3: 66
-const gainAt=(perf,g,lvl)=>{const f=clamp((tierCeil(lvl)-perf)/22,.1,1);return Math.max(perf<tierCeil(lvl)?1:0,Math.round(g*f))};
-// design cost grows as the part gets better relative to the tier
-const designCost=(kind,part)=>Math.round(DESIGNS[kind].cost*SER().cost*(1+Math.max(0,PT().parts[part].perf-(tierCeil(G.tier)-25))/20)/1e4)*1e4;
 function carStat(t,s){let v=0;for(const k in MIX[s])v+=t.parts[k].perf*MIX[s][k];return v}
 // seconds per lap gained (+) or lost (-) by a race focus at a track; 0 = balanced
 function focusGain(f,tr){return f?(tr.d[f-1]-1/3)*3-.15:0}
@@ -557,7 +515,7 @@ function startRace(){
     const d=drv(q.id),t=team(d.teamId),mine=t.id==='P';
     const c=mine?W.startTyre[q.id]:(W.wet[0]<.2?(Math.random()<.35?'soft':Math.random()<.85?'medium':'hard'):bestTyreFor(W.wet[0]));
     const fuel=mine?W.startFuel[q.id]:Math.min(tr.cap,Math.round(tr.laps*R(.42,.6))+1.5);
-    RS.cars.push({id:q.id,d,team:t,mine,dist:-i*.003,lapsDone:0,lapStartT:0,tyre:{c,wear:0,age:0},pc:freshPC(),fuel,mode:1,eng:1,auto:!!(mine&&G.autoPit&&G.autoPit[q.id]),focus:mine?(W.startFocus[q.id]||0):(Math.random()<.75?bestFocus(tr):0),
+    RS.cars.push({id:q.id,d,team:t,mine,dist:-i*.003,lapsDone:0,lapStartT:0,tyre:{c,wear:0,age:0},pc:freshPC(),fuel,mode:1,eng:1,focus:mine?(W.startFocus[q.id]||0):(Math.random()<.75?bestFocus(tr):0),
       box:null,boxSel:c,rep:false,fuelT:null,pitT:0,pitTot:0,stall:0,dnf:null,fin:false,finT:0,last:null,best:null,cool:0,stops:0,grid:i+1,
       wearThresh:R(66,80),setupQ:W.setupQ[q.id]??.6,noise:(Math.random()-.5)*1.5,lt:tr.base,warned:{},side:i%2?1:-1,latT:0,lat:0,prevPos:i,pos:i});
   });
@@ -572,8 +530,8 @@ function order(){return RS.cars.slice().sort((a,b)=>{
   if(a.fin&&b.fin){const f=Math.floor(b.dist)-Math.floor(a.dist);return f||a.finT-b.finT}
   return b.dist-a.dist})}
 function retire(car,why){
-  if(car.dnf)return;car.dnf=why;if(car.mine)sfx('fail');feed(`${car.d.name} retires: ${why}.`,car.mine?'hot':'');
-  if(!RS.sc&&RS.laps-RS.leaderLap>3&&Math.random()<.55){RS.sc=3;feed('Safety car deployed.','hot');sfx('sc')}
+  if(car.dnf)return;car.dnf=why;feed(`${car.d.name} retires: ${why}.`,car.mine?'hot':'');
+  if(!RS.sc&&RS.laps-RS.leaderLap>3&&Math.random()<.55){RS.sc=3;feed('Safety car deployed.','hot')}
 }
 function dmg(car,part,amt){car.pc[part]=Math.max(0,car.pc[part]-amt);if(car.pc[part]<=0)retire(car,FAIL[part])}
 function step(dt){
@@ -614,7 +572,7 @@ function step(dt){
               if(car.mine||ahead.mine)feed(`Contact! ${car.d.name} hits ${ahead.d.name}.`,'hot');
               dmg(ahead,'rearWing',R(5,25));dmg(car,'suspension',R(0,15));dmg(car,'frontWing',R(15,45));
             }else if(Math.random()<p){
-              passed=true;nd=ahead.dist+.0005;ahead.cool=1.5;if(car.mine)sfx('gain');else if(ahead.mine)sfx('lose');
+              passed=true;nd=ahead.dist+.0005;ahead.cool=1.5;
               if(car.mine||ahead.mine)feed(`${car.d.name} passes ${ahead.d.name}.`,car.mine?'me':'hot');
             }
           }
@@ -635,7 +593,7 @@ function step(dt){
     if(Math.floor(nd)>Math.floor(prev)&&Math.floor(nd)>=1)crossLine(car);
     if(!car.dnf&&!car.fin&&car.pitT<=0&&car.stall<=0)ahead=car;
   }
-  if(RS.cars.every(c=>c.dnf||c.fin)){RS.over=true;feed('Chequered flag. Race over.','hot');const s0=UI.silent;UI.silent=false;sfx('flag');UI.silent=s0}
+  if(RS.cars.every(c=>c.dnf||c.fin)){RS.over=true;feed('Chequered flag. Race over.','hot')}
 }
 function relOf(car){let s=0;for(const[k]of PARTS)s+=car.team.parts[k].rel;return s/PARTS.length}
 function crossLine(car){
@@ -647,7 +605,7 @@ function crossLine(car){
   if(car.lapsDone>RS.leaderLap){RS.leaderLap=car.lapsDone;
     for(const c of RS.cars)c.prevPos=c.pos;
     if(RS.sc){RS.sc--;if(!RS.sc)feed('Safety car in. Racing resumes.','hot')}
-    else if(RS.laps-RS.leaderLap>4&&Math.random()<.025+RS.w*.05){RS.sc=RI(2,3);sfx('sc');feed(pick(['Debris on track.','A car is stopped at turn 4.','Barrier repairs needed.'])+' Safety car deployed.','hot')}
+    else if(RS.laps-RS.leaderLap>4&&Math.random()<.025+RS.w*.05){RS.sc=RI(2,3);feed(pick(['Debris on track.','A car is stopped at turn 4.','Barrier repairs needed.'])+' Safety car deployed.','hot')}
     const nx=RS.wet[Math.min(RS.wet.length-1,RS.leaderLap+2)];
     if(nx>.15&&RS.w<.1&&!RS.rainWarn){RS.rainWarn=true;feed('Radio: rain expected within two laps.','hot')}
     if(nx<.05&&RS.w>.3)RS.rainWarn=false;
@@ -671,7 +629,6 @@ function crossLine(car){
     if(condMin(car)<45&&!car.warned.cond){car.warned.cond=1;feed(`Radio ${car.d.code}: "Something doesn't feel right with the car."`,'hot')}
     if(car.fuel<2.2&&car.fuel<lapsLeft&&!car.warned.fuel){car.warned.fuel=1;feed(`Radio ${car.d.code}: "Fuel is getting low. Two laps left."`,'hot')}
   }
-  if(car.mine&&car.auto&&!car.box){const call=engineerCall(car,tr);if(call){car.box=call;feed(`Engineer calls ${car.d.name} in: ${call.why.toLowerCase()}.`,'me')}}
   if(car.box){
     const b=car.box;car.box=null;
     let work=0;
@@ -682,7 +639,7 @@ function crossLine(car){
     work=Math.max(work,2);
     let tm=Math.max(3,tr.pit*(RS.sc?.55:1)-PL*tr.base)+work;
     if(Math.random()<.03){tm+=R(3,7);feed(`Slow stop for ${car.d.name}.`,car.mine?'hot':'')}
-    car.stops++;car.pitT=tm;car.pitTot=tm;car.inPitLap=true;if(car.mine)sfx('pit');
+    car.stops++;car.pitT=tm;car.pitTot=tm;car.inPitLap=true;
     if(car.mine){car.rep=false;car.fuelT=null;if(b.c!=='keep')car.boxSel=b.c}
     feed(`${car.d.name} pits${b.c!=='keep'?' for '+TYRES[b.c].n:''}${add>0?`, +${add.toFixed(1)} laps fuel`:''}${b.rep?', repairs':''} (${work.toFixed(1)}s stationary).`,car.mine?'me':'');
   }
@@ -709,14 +666,10 @@ function finishRace(){
   for(const[k,n]of PARTS){const p=pt.parts[k];if(p.risky&&Math.random()<.14){const f=1.5e6*SER().cost;p.risky=false;p.perf=Math.max(20,p.perf-8);fin.fine-=f;fin.project+=`Scrutineers found your ${n.toLowerCase()} outside the rules: fined ${money(f)}, part rebuilt to legal spec. `}}
   for(const pj of G.projects.slice()){pj.left--;if(pj.left<=0){const p=pt.parts[pj.part];
     if(pj.kind==='rel'){p.rel=clamp(p.rel+pj.rel,0,99);fin.project+=`Reliability upgrade fitted to the ${pj.name.toLowerCase()} (+${pj.rel}). `}
-    else{const g=gainAt(p.perf,pj.perf,G.tier);p.perf=clamp(p.perf+g,0,99);p.rel=pj.rel;p.risky=pj.kind==='grey';fin.project+=`New ${pj.name.toLowerCase()} fitted: +${g} performance${g<pj.perf?` (the part is near its limit, so the gain was smaller than the ${pj.perf} designed)`:''}, ${pj.rel} reliability. `}
+    else{p.perf=clamp(p.perf+pj.perf,0,99);p.rel=pj.rel;p.risky=pj.kind==='grey';fin.project+=`New ${pj.name.toLowerCase()} fitted: +${pj.perf} performance, ${pj.rel} reliability. `}
     G.projects.splice(G.projects.indexOf(pj),1)}}
   const net=Object.values(fin).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0);G.budget+=net;
-  // AI factories: better teams and higher tiers develop faster; they usually work on their weakest part
-  G.series.forEach((list,lvl)=>{for(const t of list){if(t.id==='P')continue;const tries=1+(Math.random()<.5-lvl*.2?1:0);
-    for(let n=0;n<tries;n++){if(Math.random()>.7+t.tier*.25)continue;
-      const k=Math.random()<.6?PARTS.map(([x])=>x).sort((a,b)=>t.parts[a].perf-t.parts[b].perf)[0]:pick(PARTS)[0];
-      t.parts[k].perf=clamp(t.parts[k].perf+gainAt(t.parts[k].perf,RI(2,5+Math.round(t.tier*2)),lvl),0,99)}}});
+  for(const t of G.series.flat())if(t.id!=='P'&&Math.random()<.45+t.tier*.35){const k=pick(PARTS)[0];t.parts[k].perf=clamp(t.parts[k].perf+RI(1,3+Math.round(t.tier*2)),0,99)}
   simOtherSeries();
   const winner=o[0];
   G.history.push({round:G.round,track:tr.name,winner:winner.d.name,wcolor:winner.team.color});
@@ -755,7 +708,7 @@ function newSeason(){
   G.seasonLog.push({season:G.season,series:SER().short,champ:standingsD()[0].name,team:st[0].name,me:pos+1,move:me?(me.to<me.from?'up':'down'):''});
   for(const m of mv){const t=team(m.id);G.series[m.from].splice(G.series[m.from].indexOf(t),1);G.series[m.to].push(t);if(m.id!=='P')t.tier=m.to<m.from?R(.25,.4):R(.6,.8)}
   if(me){G.tier=me.to;const up=me.to<me.from,pt=PT();Object.assign(pt,econ(G.tier,up?.35:.7));
-    const bonus=SERIES[G.tier].budget[0]*(up?.6:.3)*1e6;G.budget+=bonus;
+    const bonus=SERIES[G.tier].budget[0]*(up?.4:.3)*1e6;G.budget+=bonus;
     msg=up?`Promoted to the ${SER().name}! ${money(bonus)} promotion bonus.`:`Relegated to the ${SER().name}. ${money(bonus)} parachute payment.`}
   G.teams=G.series[G.tier];for(const k in WORLDS)delete WORLDS[k];
   for(const t of G.series.flat()){t.points=0;for(const[k]of PARTS){t.parts[k].perf=Math.round(t.parts[k].perf*.93);t.parts[k].risky=false}}
@@ -793,7 +746,7 @@ function startDesign(kind){
   const eng=nextDesigner();if(eng===undefined)return toast('No designer is free.');
   const b=eng?engBonus(eng):{perf:0,faster:0,rel:0};
   if(kind==='rel'){const c=.6e6*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;G.projects.push({part,name,kind,left:1,rel:RI(10,18)+b.rel,total:1,eng:eng?eng.id:null})}
-  else{const D=DESIGNS[kind],c=designCost(kind,part);if(G.budget<c)return toast('Not enough budget.');G.budget-=c;
+  else{const D=DESIGNS[kind],c=D.cost*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;
     const races=Math.max(1,D.races-b.faster);G.projects.push({part,name,kind,left:races,total:races,perf:RI(...D.perf)+b.perf,rel:Math.min(99,RI(...D.rel)+b.rel),eng:eng?eng.id:null})}
   const pj=G.projects[G.projects.length-1];
   save();render();toast(`${eng?eng.name:'Chief designer'} starts the ${name.toLowerCase()}. Ready in ${pj.left} race${pj.left>1?'s':''}.`);
@@ -936,7 +889,6 @@ function render(){
   cancelAnimationFrame(UI.raf);
   document.body.classList.toggle('hasnav',!!(G&&G.screen==='hub'));
   document.body.classList.toggle('racing',!!(G&&G.screen==='weekend'&&W&&W.phase==='race'));
-  if(!(G&&G.screen==='weekend'&&W&&W.phase==='race'))engineStop();
   if(!G){return UI.picking?renderTeamSelect():renderTitle()}
   if(G.screen==='hub')return renderHub();
   if(G.screen==='weekend'){if(W&&W.phase==='race'){if(!RS)startRace();else renderRace();return}return renderWeekend()}
@@ -1012,7 +964,7 @@ function renderHub(){
       ${G.projects.length>=slots()?`<p class="muted" style="margin:0">All design slots are busy.${G.staff.length<MAX_STAFF?' Hire an engineer below to build more parts at once.':''}</p>`:(()=>{const avail=PARTS.filter(([k])=>!G.projects.some(p=>p.part===k));if(!avail.some(([k])=>k===UI.dpart))UI.dpart=avail[0][0];const nd=nextDesigner();const b=nd?engBonus(nd):null;return `
       <div class="row"><label for="dpart" class="eyebrow">Part</label><select id="dpart" data-act="dpart">${avail.map(([k,n])=>`<option value="${k}" ${UI.dpart===k?'selected':''}>${n} (${t.parts[k].perf})</option>`).join('')}</select>
        <span class="muted" style="font-size:12px">Designer: <b style="color:var(--fg)">${designerName(nd?nd.id:null)}</b>${b?` · +${b.perf} perf, +${b.rel}% rel${b.faster?', 1 race faster':''}`:''}</span></div>
-      <div class="design">${Object.entries(DESIGNS).map(([k,D])=>{const c=designCost(k,UI.dpart),p=t.parts[UI.dpart].perf;return `<button class="dopt" data-act="design" data-v="${k}" ${G.budget<c?'disabled':''}><b>${D.n}</b><span class="mono">${money(c)} · ${D.races} races</span><span class="mono good">+${gainAt(p,D.perf[0],G.tier)}–${gainAt(p,D.perf[1],G.tier)} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`}).join('')}
+      <div class="design">${Object.entries(DESIGNS).map(([k,D])=>`<button class="dopt" data-act="design" data-v="${k}" ${G.budget<D.cost*SER().cost?'disabled':''}><b>${D.n}</b><span class="mono">${money(D.cost*SER().cost)} · ${D.races} races</span><span class="mono good">+${D.perf[0]}–${D.perf[1]} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`).join('')}
        <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6*SER().cost?'disabled':''}><b>Improve part</b><span class="mono">${money(.6e6*SER().cost)} · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`})()}
      </div></div>${staffPanel()}`;
   }else if(UI.tab==='drivers'){
@@ -1119,7 +1071,6 @@ function popHTML(i,kind){
   if(kind==='pit')return `<h4>Pit stop · ${esc(c.d.name)}</h4>
     <div><div class="lab">Tyres</div><div class="boxrow" style="margin-top:6px">${TK.map(k=>`<button class="tbtn" id="q${i}-t${k}" style="--c:${TYRES[k].col}" data-act="boxtyre" data-c="${i}" data-v="${k}" title="${TYRES[k].n}">${TYRES[k].k}</button>`).join('')}<button class="tbtn keep" id="q${i}-tkeep" data-act="boxtyre" data-c="${i}" data-v="keep">Keep</button></div></div>
     <div class="slider"><div class="row" style="justify-content:space-between"><label class="lab" for="q${i}-fuel">Refuel to</label><span class="mono" id="q${i}-fv"></span></div><input type="range" min="0" max="${tr.cap}" step="0.5" id="q${i}-fuel" data-act="pfuel" data-c="${i}"></div>
-    <label class="chk"><input type="checkbox" id="q${i}-auto" data-act="auto" data-c="${i}"> <b>Auto pit</b>: the engineer makes the pit calls for this driver</label>
     <label class="chk"><input type="checkbox" id="q${i}-rep" data-act="rep" data-c="${i}"> Repair all parts <span class="muted" id="q${i}-rt"></span></label>
     <div class="row" style="justify-content:space-between"><span class="mono muted" id="q${i}-est"></span><button class="boxbtn" id="q${i}-box" data-act="box" data-c="${i}">Box this lap</button></div>
     <div class="eng" id="q${i}-eng"></div>`;
@@ -1148,7 +1099,7 @@ function renderRace(){
    ${mine.map(panHTML).join('')}
    <div class="ctr"><div class="cam"><button data-act="cam" data-v="follow" id="cam-follow">Follow</button><button data-act="cam" data-v="track" id="cam-track">Track</button></div>
     <div class="lap"><b id="lapc">LAP 1/${tr.laps}</b><div class="bar"><i id="lapb"></i></div></div>
-    <div class="spd" role="group" aria-label="Simulation speed">${[[0,'❚❚'],[3,'×1'],[10,'×4'],[25,'×12'],[60,'×30']].map(([s,l])=>`<button class="${RS.speed===s?'on':''}" data-act="speed" data-v="${s}" aria-label="${s?l+' speed':'Pause'}">${l}</button>`).join('')}<button class="end" data-act="simend" title="Simulate to the finish">End ⏭</button><button class="end" data-act="mute" aria-label="${SND.muted?'Turn sound on':'Turn sound off'}">${SND.muted?'🔇':'🔊'}</button></div></div>
+    <div class="spd" role="group" aria-label="Simulation speed">${[[0,'❚❚'],[3,'×1'],[10,'×4'],[25,'×12'],[60,'×30']].map(([s,l])=>`<button class="${RS.speed===s?'on':''}" data-act="speed" data-v="${s}" aria-label="${s?l+' speed':'Pause'}">${l}</button>`).join('')}<button class="end" data-act="simend" title="Simulate to the finish">End ⏭</button></div></div>
   </div>
   <div class="panel racelog"><div class="eyebrow" style="margin-bottom:6px">Race control and team radio</div><div class="feed" id="feed"></div></div>`;
   sizeCanvas();UI.last=performance.now();UI.lastUi=0;UI.raf=requestAnimationFrame(loop);updRaceUI();
@@ -1169,7 +1120,7 @@ function loop(now){
   if(!RS||G.screen!=='weekend')return;
   const real=Math.min(.1,(now-UI.last)/1000);UI.last=now;
   let sim=real*RS.speed;while(sim>0&&!RS.over){const d=Math.min(.25,sim);step(d);sim-=d}
-  drawRace(real);engineUpdate(!RS.over&&RS.speed>0,RS.speed,real);
+  drawRace(real);
   if(now-UI.lastUi>160){UI.lastUi=now;updRaceUI();drawMini()}
   UI.raf=requestAnimationFrame(loop);
 }
@@ -1260,7 +1211,6 @@ function updRaceUI(){
   RS.mineCars.forEach((c,i)=>{
     const pos=o.indexOf(c),a=o[pos-1],b=o[pos+1],lapsLeft=RS.laps-c.lapsDone;
     $(`#p${i}-pos`).textContent=c.dnf?'OUT':ord(pos+1);
-    {const m=$(`#pan${i} .main`);if(c.shownPos!=null&&pos!==c.shownPos&&!c.dnf&&!RS.over){m.classList.remove('flash-g','flash-r');void m.offsetWidth;m.classList.add(pos<c.shownPos?'flash-g':'flash-r')}c.shownPos=pos}
     const ap=$(`#p${i}-ap`),bp=$(`#p${i}-bp`);ap.textContent=a?pos:'–';ap.style.setProperty('--tc',a?a.team.color:'#888');bp.textContent=b?pos+2:'–';bp.style.setProperty('--tc',b?b.team.color:'#888');
     $(`#p${i}-ag`).textContent=a&&!c.dnf?gapStr(a,c):'—';$(`#p${i}-bg`).textContent=b&&!b.dnf&&!c.dnf?gapStr(c,b):'—';
     $(`#p${i}-last`).textContent=c.fin?'Finished':c.pitT>0?'In pits':fmtT(c.last);
@@ -1269,13 +1219,13 @@ function updRaceUI(){
     const ty=TYRES[c.tyre.c],gg=$(`#p${i}-g`);gg.style.setProperty('--c',ty.col);gg.style.setProperty('--w',Math.round(100-c.tyre.wear));$(`#p${i}-gk`).textContent=ty.k;$(`#p${i}-gw`).textContent=Math.round(100-c.tyre.wear)+'%';
     $(`#p${i}-fl`).textContent=c.fuel.toFixed(1)+' laps';const sur=c.fuel-lapsLeft;const fs=$(`#p${i}-fs`);fs.textContent=c.fin?'':(sur>=0?'+':'')+sur.toFixed(1);fs.className=sur>=0?'good':'bad';
     $(`#p${i}-fb`).style.height=(c.fuel/tr.cap*100)+'%';
-    const tp=$(`#p${i}-tpit`);tp.classList.toggle('boxing',!!c.box);tp.textContent=c.box?'Boxing':c.auto?'Pit · Auto':'Pit';
+    const tp=$(`#p${i}-tpit`);tp.classList.toggle('boxing',!!c.box);tp.textContent=c.box?'Boxing':'Pit';
     for(const v of['pit','cond','strat'])$(`#p${i}-t${v}`).classList.toggle('on',UI.pop[i]===v);
     const pop=$(`#pop${i}`);
     if(UI.pop[i]==='pit'){
       for(const k of[...TK,'keep'])$(`#q${i}-t${k}`).classList.toggle('on',c.boxSel===k);
       const fsl=$(`#q${i}-fuel`),fv=c.fuelT??fuelTo(c,tr);if(document.activeElement!==fsl)fsl.value=fv;$(`#q${i}-fv`).textContent=`${(+fv).toFixed(1)} laps (+${Math.max(0,fv-c.fuel).toFixed(1)})`;
-      $(`#q${i}-rep`).checked=c.rep;$(`#q${i}-auto`).checked=!!c.auto;$(`#q${i}-rt`).textContent=`(+${(PARTS.reduce((s,[k])=>s+100-c.pc[k],0)*.02).toFixed(1)}s)`;
+      $(`#q${i}-rep`).checked=c.rep;$(`#q${i}-rt`).textContent=`(+${(PARTS.reduce((s,[k])=>s+100-c.pc[k],0)*.02).toFixed(1)}s)`;
       const e=estStop(c);$(`#q${i}-est`).textContent=`Stationary ${e.work.toFixed(1)}s · total ~${e.total.toFixed(0)}s`;
       const bx=$(`#q${i}-box`);bx.classList.toggle('on',!!c.box);bx.textContent=c.box?'Cancel box':'Box this lap';bx.disabled=!!(c.dnf||c.fin);
       const call=!c.dnf&&!c.fin?engineerCall(c,tr):null;
@@ -1354,8 +1304,6 @@ function settingsHTML(){
     <div class="row"><button class="ghost" data-act="importcode">Load career</button><span class="muted" style="font-size:12px">This replaces the career on this device.</span></div></div>
    <div class="panel stack"><h3>Reset career</h3><p class="muted" style="margin:0">Deletes this career from this device. It cannot be undone.</p>
     ${UI.confirmReset?`<div class="row"><button class="btn" style="background:var(--bad);color:#fff" data-act="resetyes">Yes, delete my career</button><button class="ghost" data-act="resetno">Cancel</button></div>`:'<div class="row"><button class="ghost" data-act="reset">Reset career…</button></div>'}</div>
-   <div class="panel stack"><h3>Sound</h3><p class="muted" style="margin:0">Engine noise during races, plus effects for overtakes, pit stops, safety cars and the chequered flag.</p>
-    <div class="row"><button class="ghost" data-act="mute">${SND.muted?'🔇 Sound is off: turn on':'🔊 Sound is on: turn off'}</button></div></div>
    <div class="panel stack"><h3>About</h3><p style="margin:0"><b>${GAME_NAME}</b> · version ${VERSION}${DEMO?' · free demo':''}</p>
     <p class="muted" style="margin:0">All teams, drivers and circuits are fictional. Fonts: Barlow Condensed, Inter and JetBrains Mono, used under the SIL Open Font License.</p>
     ${DEMO?buyLink('Get the full game ›'):''}</div></div>`;
@@ -1366,7 +1314,7 @@ function renderSeason(){
   const headline=me?(up?`Promoted to the ${SERIES[me.to].name}!`:`Relegated to the ${SERIES[me.to].name}`):`${esc(sd[0].name)} is ${SER().short} champion`;
   app.innerHTML=topBar('Season review',`Season ${G.season} complete`)+`<h1 style="font-size:clamp(36px,6vw,64px);margin:8px 0 16px" class="${me?(up?'good':'bad'):''}">${headline}</h1>
    <div class="grid2"><div class="panel stack"><h3>Your season</h3><p style="margin:0">You finished <b>${ord(pos+1)}</b> in the ${SER().name}, earning ${money(PRIZE[pos]*SER().prize*1e6)} in end-of-season prize money.</p>
-    ${me?`<p style="margin:0">${up?`Next season you race in tier ${me.to+1}. Expect to be near the back at first: the cars there are much faster, but the budgets and sponsors are bigger. You get a promotion bonus of ${money(SERIES[me.to].budget[0]*.6e6)}.`:`Next season you race in tier ${me.to+1}, with smaller budgets and slower rivals. You get a parachute payment of ${money(SERIES[me.to].budget[0]*.3e6)}.`}</p>`:''}
+    ${me?`<p style="margin:0">${up?`Next season you race in tier ${me.to+1}. Expect to be near the back at first: the cars there are much faster, but the budgets and sponsors are bigger. You get a promotion bonus of ${money(SERIES[me.to].budget[0]*.4e6)}.`:`Next season you race in tier ${me.to+1}, with smaller budgets and slower rivals. You get a parachute payment of ${money(SERIES[me.to].budget[0]*.3e6)}.`}</p>`:''}
     <p class="muted" style="margin:0">New regulations next season reduce every team's part performance by 7%. Drivers age: young ones improve, veterans fade. Grey-area parts become legal. A driver with morale under 20 will quit.</p>
     ${DEMO?demoEnd():`<button class="btn" data-act="season">Start season ${G.season+1} ›</button>`}</div>
    ${SERIES.map((s,l)=>`<div class="panel"><h3>Tier ${l+1} · ${s.name}</h3><p class="muted" style="margin:2px 0 8px">Champion: ${esc(standingsD(l)[0].name)}</p><div class="scroll">${teamTable(l)}</div></div>`).join('')}</div>`;
@@ -1378,7 +1326,6 @@ document.addEventListener('click',e=>{
   if(!el){if(e.target.id==='cv'&&RS)pickCar(e);return}
   const a=el.dataset.act,v=el.dataset.v;
   const pc=()=>RS.mineCars[+el.dataset.c];
-  if(a!=='mute'&&el.tagName==='BUTTON')sfx('tick');
   switch(a){
     case 'pickteam':UI.picking=true;UI.pick=[2,7];UI.preview=null;render();break;
     case 'back':UI.picking=false;render();break;
@@ -1406,8 +1353,7 @@ document.addEventListener('click',e=>{
     case 'stTyre':W.startTyre[el.dataset.id]=v;save();render();break;
     case 'race':startRace();break;
     case 'speed':RS.speed=+v;document.querySelectorAll('[data-act=speed]').forEach(b=>b.classList.toggle('on',b===el));break;
-    case 'simend':{UI.silent=true;let n=0;while(!RS.over&&n<400000){step(.5);n++}UI.silent=false;updRaceUI();break}
-    case 'mute':setMute(!SND.muted);document.querySelectorAll('[data-act=mute]').forEach(b=>{b.textContent=SND.muted?'🔇':'🔊';b.setAttribute('aria-label',SND.muted?'Turn sound on':'Turn sound off')});if(UI.tab==='settings'&&G&&G.screen==='hub')render();break;
+    case 'simend':{let n=0;while(!RS.over&&n<400000){step(.5);n++}updRaceUI();break}
     case 'results':finishRace();break;
     case 'cam':UI.cam.mode=v;updRaceUI();break;
     case 'selcar':UI.sel=+v;UI.cam.mode='follow';updRaceUI();break;
@@ -1417,7 +1363,6 @@ document.addEventListener('click',e=>{
     case 'focus':pc().focus=+v;updRaceUI();break;
     case 'stFocus':W.startFocus[el.dataset.id]=+v;save();render();break;
     case 'boxtyre':{const c=pc();c.boxSel=v;if(c.box)c.box.c=v;updRaceUI();break}
-    case 'auto':{const c=pc();c.auto=el.checked;G.autoPit[c.id]=c.auto;save();updRaceUI();break}
     case 'rep':{const c=pc();c.rep=el.checked;if(c.box)c.box.rep=c.rep;updRaceUI();break}
     case 'box':{const c=pc();c.box=c.box?null:{c:c.boxSel,rep:c.rep,fuel:c.fuelT??null};updRaceUI();break}
     case 'answer':answer(+v);break;
