@@ -260,26 +260,26 @@ select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);bor
 .tut{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(5,10,14,.72);padding:16px}
 .tut .card{background:var(--panel);border:1px solid var(--accent);border-radius:6px;max-width:440px;width:100%;padding:20px;display:flex;flex-direction:column;gap:12px}
 .garage{display:flex;flex-direction:column;gap:14px}
-.gtop{display:grid;grid-template-columns:minmax(170px,230px) minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:640px){.gtop{grid-template-columns:1fr}.gcar{max-width:140px;margin:0 auto}.ghs{font-size:10px;padding:4px 7px}}
-.gcar{position:relative}.gcar svg{width:100%;height:auto;display:block;opacity:.8}
-.ghs{position:absolute;transform:translate(-50%,-50%);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:5px 9px;font-size:11px;white-space:nowrap;color:var(--fg)}
-.ghs:hover{border-color:var(--accent)}.ghs.on{background:var(--accent);color:#04161c;border-color:var(--accent);font-weight:600}
-.gedit{display:flex;flex-direction:column;gap:10px;min-width:0}
-.gpic{width:150px;height:66px;flex:none}
 .stp{display:flex;flex-direction:column;gap:4px}
 .stp-row{display:flex;align-items:center;gap:10px}.stp-row b{min-width:110px;text-align:center;font-size:18px}
 .stp-b{width:42px;height:42px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font-size:22px;line-height:1;color:var(--fg)}
 .stp-b:hover{border-color:var(--accent)}
-.gears{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;height:112px;margin-top:4px}
-.gbar{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:4px 0;color:var(--fg)}
-.gbar i{position:absolute;left:5px;right:5px;bottom:34px;background:var(--accent);border-radius:2px}
-.gbar b{font-size:13px}.gbar small{font-size:10px;color:var(--muted)}
 .balm{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#3d8bff,#33454f 50%,#ff5d5d);margin:10px 0 6px}
 .balm-x{position:absolute;top:-5px;width:4px;height:20px;background:var(--fg);border-radius:2px;transform:translateX(-50%)}
 .balm-p{position:absolute;top:-8px;width:16px;height:26px;border:2px dashed var(--go);border-radius:4px;transform:translateX(-50%)}
 .fbbox{background:var(--panel2);border-left:3px solid var(--accent);padding:10px 12px;border-radius:3px;display:flex;flex-direction:column;gap:4px;font-size:13px}
 .trace{width:100%;height:150px;display:block;margin-top:6px}
+.cnums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.cnums{gap:6px}.cnum{padding:8px}.cnum b.mono{font-size:18px!important}.cnum .eyebrow{font-size:9px}.cnum .muted{font-size:10px!important}}
+.cnum{background:var(--panel2);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.cnum .bar{height:6px;margin-top:4px}
+.dials{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.dial{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(0,1fr);gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.dial-n{display:flex;flex-direction:column;gap:2px;min-width:0}.dial-n small{font-size:12px;line-height:1.35}
+.dial-v{display:flex;flex-direction:column;align-items:center;min-width:92px}.dial-v b{font-size:18px}.dial-v small{font-size:10px}
+.dial-e{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.echip{font-family:var(--f-mono);font-size:11px;padding:2px 6px;border-radius:3px;background:var(--panel2)}
+@media (max-width:640px){.dial{grid-template-columns:auto minmax(0,1fr);row-gap:8px}.dial-n{grid-column:1/-1}}
 .qa{display:flex;flex-direction:column;gap:8px}
 .qa button{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
 .qa button:hover{border-color:var(--accent)}
@@ -324,7 +324,6 @@ const PL=.05; // pit lane length in laps
 // car performance areas: which parts feed top speed, acceleration and cornering
 const STATS=[['speed','Top speed'],['accel','Acceleration'],['corner','Cornering']];
 const MIX={speed:{engine:.45,gearbox:.2,rearWing:.35},accel:{gearbox:.45,engine:.35,brakes:.2},corner:{frontWing:.35,suspension:.35,brakes:.3}};
-const FOCUS=['Balanced','Top speed','Acceleration','Cornering'];
 // theme: forest | city | desert | coast ; sea side for coast; pitSide +1/-1
 const TRACKS=[
  {name:'Kessel Ring',code:'KSR',laps:22,base:86,pit:21,d:[.45,.3,.25],rain:.35,abr:1.0,ovt:1.0,opt:[40,62,48],theme:'forest',ps:1,pts:[[10,50],[20,20],[50,12],[80,18],[90,40],[75,55],[85,75],[60,88],[35,80],[25,65]]},
@@ -397,7 +396,7 @@ function save(){try{localStorage.setItem(SAVE,JSON.stringify({G:{...G,teams:unde
 function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return !!(s&&s.G)}catch(e){return false}}
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;G.teams=G.series[G.tier];migrate();return true}}catch(e){}return false}
 // older saves had a single G.project and no staff: upgrade them in place
-function migrate(){if(!G.projects){G.projects=G.project?[{...G.project,eng:null}]:[]}delete G.project;if(!G.staff)G.staff=[];if(!G.engMarket)G.engMarket=engMarket();if(!G.tut)G.tut={hub:true,race:true};if(W&&W.setup&&Object.values(W.setup).some(x=>x&&x.v)){W=null;if(G.screen==='weekend')G.screen='hub'}}
+function migrate(){if(!G.projects){G.projects=G.project?[{...G.project,eng:null}]:[]}delete G.project;if(!G.staff)G.staff=[];if(!G.engMarket)G.engMarket=engMarket();if(!G.tut)G.tut={hub:true,race:true};if(G.lastSetup&&Object.values(G.lastSetup).some(x=>x&&x.gears))G.lastSetup={};if(W&&W.setup&&Object.values(W.setup).some(x=>x&&(x.v||(x.s&&x.s.gears)))){W=null;if(G.screen==='weekend')G.screen='hub'}}
 const SER=()=>SERIES[G.tier];
 
 const team=id=>{for(const s of G.series){const t=s.find(t=>t.id===id);if(t)return t}};
@@ -446,25 +445,22 @@ function carScore(t,tr){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf*tr.w[k];
 function carAvg(t){let s=0;for(const[k]of PARTS)s+=t.parts[k].perf;return s/PARTS.length}
 function carStat(t,s){let v=0;for(const k in MIX[s])v+=t.parts[k].perf*MIX[s][k];return v}
 // seconds per lap gained (+) or lost (-) by a race focus at a track; 0 = balanced
-function focusGain(f,tr){return f?(tr.d[f-1]-1/3)*3-.15:0}
-const bestFocus=tr=>{let b=0,g=0;for(let f=1;f<4;f++){const x=focusGain(f,tr);if(x>g){g=x;b=f}}return b};
-const wearFocus=[1,1,1.06,1.12],fuelFocus=[1,1.06,1,1],ovtFocus=[0,.06,.04,0];
 function weatherPen(c,w){const cat=TYRES[c].cat;
   if(cat==='dry')return w*9;
   if(cat==='inter')return w<.2?2.4+(.2-w)*5:(w>.75?(w-.75)*8:0);
   return w<.6?2.8+(.6-w)*6:0}
 function weatherWear(c,w){const cat=TYRES[c].cat;if(cat==='dry')return w>.3?.7:1;if(cat==='inter')return w<.2?2.5:1;return w<.5?3:1}
 function wearPen(x){return Math.pow(x/100,2)*2.4+(x>80?(x-80)*.18:0)}
-function wearRate(car,c,w,tr){return TYRES[c].wear*[.7,1,1.35][car.mode]*(1.2-car.d.tyre/100*.4)*tr.abr*weatherWear(c,w)*wearFocus[car.focus||0]*(car.wearSetup||1)}
+function wearRate(car,c,w,tr){return TYRES[c].wear*[.7,1,1.35][car.mode]*(1.2-car.d.tyre/100*.4)*tr.abr*weatherWear(c,w)*(car.wearSetup||1)}
 function bestTyreFor(w){return TK.filter(k=>k!=='soft'&&k!=='medium').reduce((a,b)=>weatherPen(b,w)<weatherPen(a,w)?b:a,'hard')}
 const condAvg=c=>{let s=0;for(const[k]of PARTS)s+=c.pc[k];return s/PARTS.length};
 const condMin=c=>Math.min(...PARTS.map(([k])=>c.pc[k]));
 const freshPC=()=>Object.fromEntries(PARTS.map(([k])=>[k,100]));
 function lapTime(car,env,tr){
   const d=car.d,t=car.team,ty=car.tyre.c;
-  let lt=tr.base+(100-carScore(t,tr))*.035+(100-d.pace)*.03+(60-d.morale)*.005+(car.setupLoss??(1-(car.setupQ??.6))*.9);
+  let lt=tr.base+(100-carScore(t,tr)-(car.setupPts||0))*.035+(100-d.pace)*.03+(60-d.morale)*.005;   // setup points add to the parts' score
   lt+=TYRES[ty].delta+wearPen(car.tyre.wear)+weatherPen(ty,env.w)*(1.25-d.wet/100*.5);
-  lt+=[.45,0,-.35][car.mode]+[.3,0,-.25][car.eng]-focusGain(car.focus||0,tr);
+  lt+=[.45,0,-.35][car.mode]+[.3,0,-.25][car.eng];
   lt+=car.fuel*.035+(1-env.grip)*.8;
   const ca=condAvg(car);if(ca<70)lt+=(70-ca)*.02;
   lt+=(100-car.pc.frontWing)*.008;
@@ -500,146 +496,122 @@ function genWeather(tr){
   }
   return out;
 }
-/* ---------- garage setup model ----------
-   Six adjustable parts. Every track (and the weather) has an ideal for each one; missing it costs
-   time in the part of the lap where it matters (straights, slow corners or fast corners), and the
-   driver tells you about it. Lap = sum of 3 sectors; loss = seconds slower than the ideal setup. */
-const SETUP_DEF={fw:10,rw:6,gears:[0,0,0,0,0,0,0],top:5,steer:3,sf:5,sr:5,bias:55};
-const SETUP_PARTS=[
-  ['fw','Front wing','Angle of the front wing. More angle adds front grip and turn-in (more oversteer), and a little drag.'],
-  ['rw','Rear wing','Downforce level. More grips the corners and calms the rear (more understeer), but costs top speed.'],
-  ['gears','Gearbox','Ratio of each gear. Short is punchy out of slow corners. Long gives a higher top speed. Top gear sets where you hit the limiter.'],
-  ['steer','Steering','Steering ratio. Quick suits tight hairpins but is twitchy in fast corners. Slow is the opposite.'],
-  ['susp','Suspension','Spring stiffness. Stiff is sharp on smooth, fast tracks. Soft rides kerbs, bumps and rain. A stiffer rear than front adds oversteer.'],
-  ['bias','Brakes','Brake bias. More front is stable but understeers and can lock the fronts. More rear helps rotation but can lock the rears.']];
-const CHANGE_MIN={fw:2,rw:4,gears:10,steer:3,susp:6,bias:1};   // garage minutes per kind of change
-const SETUP_RANGE={fw:[0,20],rw:[1,11],top:[1,9],steer:[1,5],sf:[1,10],sr:[1,10],bias:[50,60]};
-const cloneSetup=s=>({...s,gears:s.gears.slice()});
-const sat=(x,cap)=>cap*(1-Math.exp(-x/cap));                      // soft cap so nothing explodes
-function sectorsOf(ti){                                            // 3 sectors per track, each a mix of straight/slow/fast
+/* ---------- car setup ----------
+   Six dials. Each one moves the car's three numbers (top speed, acceleration, cornering) in a
+   clear direction. Lap time uses those numbers exactly like better parts would:
+   every point is worth 0.035s, weighted by what the track demands. */
+const SETUP_DEF={fw:5,rw:5,gear:5,steer:3,susp:5,bias:55};
+const TEST_SETUP={fw:3,rw:3,gear:7,steer:4,susp:7,bias:57};      // first race of a career
+const SETUP_RANGE={fw:[1,9],rw:[1,9],gear:[1,9],steer:[1,5],susp:[1,9],bias:[50,60]};
+const SETUP_PARTS=[ // key, name, low end, high end, what it does
+  ['fw','Front wing','flat','steep','More front grip: sharper turn-in, the car leans towards oversteer. A little drag.'],
+  ['rw','Rear wing','low','high','Downforce: more cornering grip, less top speed. The car leans towards understeer.'],
+  ['gear','Gear ratios','short','long','Short: quicker acceleration. Long: higher top speed.'],
+  ['steer','Steering','quick','slow','Quick: sharp in slow corners, twitchy in fast ones, more tyre wear.'],
+  ['susp','Suspension','soft','stiff','Stiff: more grip on smooth, fast tracks, more tyre wear. Soft: better on kerbs, bumps and in rain.'],
+  ['bias','Brake bias','rear','front','Front: stable, towards understeer. Rear: helps the car turn, towards oversteer.']];
+const CHANGE_MIN={fw:3,rw:3,gear:5,steer:2,susp:4,bias:1};        // practice minutes per changed dial
+const cloneSetup=s=>({...s});
+const fmtSetupVal=(k,v)=>k==='bias'?v+'% front':v;
+// the rules: how a setup moves top speed / acceleration / cornering (in stat points)
+function setupMods(S,ti,wet,pref){
+  const tr=TRACKS[ti],[ds,da,dc]=tr.d,street=tr.theme==='city'?1:0;
+  const dn=((S.fw*.35+S.rw*.65)-5)/4,g=(S.gear-5)/4,q=(3-S.steer)/2,s=(S.susp-5)/4;
+  const bal=(S.fw-S.rw)/8+(55-S.bias)/10,be=bal-pref;              // + oversteer, - understeer
+  const m={speed:0,accel:0,corner:0,bal,be};
+  m.speed+=-12*dn-5*dn*dn;        m.corner+=12*dn-5.5*dn*dn+5*dn*wet;            // wings: grip vs drag (drag grows, grip gains shrink)
+  m.speed+=10*g-2*g*g;            m.accel+=-10*g-5*g*g-8*wet*Math.max(0,-g);     // gears: top speed vs acceleration (too short = wheelspin)
+  m.corner+=6*q*(da-dc+.05)-2*q*q;                                               // steering: slow vs fast corners
+  m.corner+=6*s*(dc+ds-.55)-6*s*(street*.5+wet*.8)-2*s*s;                        // suspension: smooth & fast vs bumpy & wet
+  m.corner-=Math.min(12,16*be*be);                                               // off-balance for this driver
+  m.corner-=1.5*Math.max(0,S.bias-58)+2*Math.max(0,52-S.bias);                   // brakes locking
+  const K=1.5;m.speed*=K;m.accel*=K;m.corner*=K;                                  // overall strength of setup effects
+  m.pts=ds*m.speed+da*m.accel+dc*m.corner;                                      // weighted by the track
+  m.wear=1+.05*q+.06*Math.max(0,s)+.12*Math.abs(be);
+  return m;
+}
+const setupDelta=m=>-.035*m.pts;                                                // seconds per lap vs no setup effect
+function bestSetup(ti,wet,pref){
+  const ev=S=>-setupMods(S,ti,wet,pref).pts;let best=cloneSetup(SETUP_DEF),bt=ev(best);
+  for(let pass=0;pass<8;pass++){let imp=false;
+    for(const k in SETUP_RANGE){const[a,b]=SETUP_RANGE[k];for(let v=a;v<=b;v++)if(v!==best[k]){const S={...best,[k]:v},t=ev(S);if(t<bt-1e-9){bt=t;best=S;imp=true}}}
+    for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++){const S={...best,fw:clamp(best.fw+a,1,9),rw:clamp(best.rw+b,1,9)},t=ev(S);if(t<bt-1e-9){bt=t;best=S;imp=true}}
+    if(!imp)break}
+  return best;
+}
+// what one dial does on its own, compared with the neutral setup (for the effect chips)
+function dialEffect(k,S,ti,wet,pref){const base=setupMods({...SETUP_DEF,...(k==='fw'||k==='rw'||k==='bias'?{fw:S.fw,rw:S.rw,bias:S.bias}:{}),[k]:SETUP_DEF[k]},ti,wet,pref),with_=setupMods({...SETUP_DEF,...(k==='fw'||k==='rw'||k==='bias'?{fw:S.fw,rw:S.rw,bias:S.bias}:{}),[k]:S[k]},ti,wet,pref);
+  return {speed:with_.speed-base.speed,accel:with_.accel-base.accel,corner:with_.corner-base.corner}}
+function wingEffect(S,ti,wet,pref){const a=setupMods({...SETUP_DEF,fw:S.fw,rw:S.rw,bias:S.bias},ti,wet,pref),b=setupMods(SETUP_DEF,ti,wet,pref);return {speed:a.speed-b.speed,accel:a.accel-b.accel,corner:a.corner-b.corner}}
+// the driver's advice: the single changes that would help most, said the way a driver would say it
+const ADVICE={rw:{'-1':'Too much drag on the straights. Try less rear wing.','1':'Not enough grip in the corners. Try more rear wing.'},
+  fw:{'1':'Understeer: the front won\'t turn in. Try more front wing.','-1':'Oversteer: the rear is loose. Try less front wing.'},
+  gear:{'1':'Hitting the limiter on the straights. Try longer gears.','-1':'Slow out of the corners. Try shorter gears.'},
+  steer:{'-1':'Hard to turn in at the slow corners. Try quicker steering.','1':'Twitchy in the fast corners. Try slower steering.'},
+  susp:{'1':'Lazy through the fast corners. Try stiffer suspension.','-1':'Bouncing over kerbs and bumps. Try softer suspension.'},
+  bias:{'1':'Rear locking up into the braking zones. Try more front brake bias.','-1':'Fronts locking and understeer on entry. Try more rear brake bias.'}};
+function setupAdvice(S,ti,wet,pref){
+  const base=setupMods(S,ti,wet,pref).pts,opts=[];
+  for(const k in SETUP_RANGE)for(const d of[-1,1]){const[a,b]=SETUP_RANGE[k],v=S[k]+d;if(v<a||v>b)continue;const g=(setupMods({...S,[k]:v},ti,wet,pref).pts-base)*.035;if(g>.02)opts.push([g,k,d])}
+  opts.sort((x,y)=>y[0]-x[0]);const seen=new Set(),out=[];
+  for(const[g,k,d]of opts){if(seen.has(k))continue;seen.add(k);out.push(ADVICE[k][d]);if(out.length===2)break}
+  return out.length?out:['The car feels great. I would not change anything.'];
+}
+function balText(be){return Math.abs(be)<.12?'balanced':be>0?(be>.4?'big oversteer':'slight oversteer'):(be<-.4?'big understeer':'slight understeer')}
+function prefText(p){return p>.12?'likes a loose, pointy car (oversteer)':p<-.12?'likes a planted, stable rear (understeer)':'likes a neutral car'}
+
+/* ---------- race weekend: practice, qualifying ---------- */
+const PRAC_MIN=60,RUN_MIN=8,Q_ATTEMPTS=3;
+function startWeekend(){
+  const tr=track();
+  W={round:G.round,phase:'practice',wet:genWeather(tr),setup:{},quali:null,startTyre:{},startFuel:{},aiSetup:{},q:null};
+  if(!G.lastSetup)G.lastSetup={};
+  for(const id of PT().drivers){const s=cloneSetup(G.lastSetup[id]||TEST_SETUP);
+    W.setup[id]={s,ran:cloneSetup(s),runs:[],clock:PRAC_MIN,pref:driverPref(id),qRuns:[]}}
+  // AI teams start from the ideal setup and miss by a few clicks; better teams miss by less
+  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers){const b=bestSetup(G.round,W.wet[0],driverPref(id)),miss=Math.round((1-t.tier)*4);
+    for(const k in SETUP_RANGE){const[a,c]=SETUP_RANGE[k];b[k]=clamp(b[k]+RI(-miss,miss),a,c)}W.aiSetup[id]=b}
+  UI.gdrv=PT().drivers[0];UI.editRace=null;G.screen='weekend';save();render();
+}
+function driverPref(id){const d=drv(id);return +(((d.name.charCodeAt(0)*13+d.name.length*7)%41-20)/100).toFixed(2)}
+const setupOf=id=>W.setup[id]?W.setup[id].s:W.aiSetup[id];
+const modsOf=(id,S,wet)=>setupMods(S||setupOf(id),G.round,wet??W.wet[0],driverPref(id));
+function changedKinds(a,b){return Object.keys(SETUP_RANGE).filter(k=>a[k]!==b[k])}
+const changeMin=st=>changedKinds(st.s,st.ran).reduce((m,k)=>m+CHANGE_MIN[k],0);
+// lap time for a driver in practice/qualifying conditions; setup enters through car.setupPts
+function paceOf(id,fuel,S){const d=drv(id),t=team(d.teamId),tr=track(),w=W.wet[0],c=w<.2?'soft':bestTyreFor(w),m=modsOf(id,S);
+  return {lap:lapTime({d,team:t,tyre:{c,wear:0},mode:2,eng:2,pc:freshPC(),fuel,setupPts:m.pts,noise:0},{w,grip:.65},tr),m}}
+function lapRecord(id,fuel,S,extra,noiseK=.03){   // practice laps are steady so setup changes show; quali has a little more variation
+  const d=drv(id),{lap,m}=paceOf(id,fuel,S),[ds,da,dc]=track().d,sec=sectorsOf(G.round),nz=()=>gauss()*(1.1-d.consistency/100)*noiseK;
+  const noSet=lap-setupDelta(m),part=[-.035*ds*m.speed,-.035*da*m.accel,-.035*dc*m.corner];   // seconds by straight/slow/fast
+  const tot=[0,1,2].map(j=>sec.reduce((s,x)=>s+[x.st,x.sl,x.fa][j]*x.len,0)||1);
+  const secs=sec.map(x=>+(noSet*x.len+part[0]*x.st*x.len/tot[0]+(part[1]*.6+part[2]*.35)*x.sl*x.len/tot[1]+(part[1]*.4+part[2]*.65)*x.fa*x.len/tot[2]+nz()+(extra||0)/3).toFixed(3));
+  const tm=team(d.teamId);
+  return {s:cloneSetup(S||setupOf(id)),secs,lap:+secs.reduce((a,b)=>a+b,0).toFixed(3),trap:Math.round(trapKmh(carStat(tm,'speed')+m.speed)+gauss()*1.2),notes:setupAdvice(S||setupOf(id),G.round,W.wet[0],driverPref(id)),be:m.be};
+}
+const trapKmh=sp=>200+sp*1.55;
+function sectorsOf(ti){
   const tr=TRACKS[ti],r=rng(ti*131+7),d=tr.d,out=[];
   for(let k=0;k<3;k++){const a=d[0]*(.4+r()*1.2),b=d[1]*(.4+r()*1.2),c=d[2]*(.4+r()*1.2),t=a+b+c;out.push({st:a/t,sl:b/t,fa:c/t,len:.8+r()*.4})}
   const L=out.reduce((s,x)=>s+x.len,0);out.forEach(x=>x.len/=L);return out;
 }
-function setupTargets(ti,wet,cond=0){   // cond: this weekend's track conditions (-1 cool/green .. +1 hot/rubbered)
-  const tr=TRACKS[ti],[sp,ac,co]=tr.d,street=tr.theme==='city'?1:0;
-  return {D:clamp(.2+co*1.05+wet*.28+cond*.07,0,1), low:clamp(.9-ac*3.2+cond*.15,-1,1), mid:clamp(.6-co*1.6,-1,1),
-    steer:clamp(1+(co-ac+.3)*5.5+cond*.4,1,5), stiff:clamp(.32+sp*.55-street*.12-wet*.22-cond*.06,.1,1), bias:clamp(Math.round(53+ac*8+cond),52,58)};
-}
-// all the numbers one setup produces at a track, plus where the time goes
-function setupEval(S,tm,pref,wet,ti,cond=0){
-  const T=setupTargets(ti,wet,cond),tr=TRACKS[ti],[sp,ac,co]=tr.d,g=S.gears;
-  const fw=S.fw/20,rw=(S.rw-1)/10,D=.45*fw+.55*rw;
-  const low=(g[0]+g[1]+g[2])/3,mid=(g[3]+g[4])/2,high=(g[5]+g[6])/2;
-  const aeroTop=280+carStat(tm,'speed')*.55-D*45;                    // km/h the drag allows
-  const gearTop=262+S.top*8+high*10;                                 // km/h at the limiter in top gear
-  const vmax=Math.min(aeroTop,gearTop);
-  const stiff=(S.sf+S.sr)/20;
-  const bal=(fw-rw)*1.0+(S.sr-S.sf)/9*.5+(55-S.bias)/5*.3;          // + oversteer / - understeer
-  const t={};                                                        // seconds lost, by cause
-  t.grip=sat(Math.max(0,T.D-D)**2*(co+.15)*5.5,1.2);
-  t.drag=sat(Math.max(0,D-T.D)**2*(sp+.15)*5,1.1);
-  t.limiter=sat(Math.max(0,aeroTop-gearTop-2)*.016*(sp+.2),.9);
-  t.longTop=sat(Math.max(0,gearTop-aeroTop-8)*.007*(ac+.2),.5);
-  t.lowLong=sat(Math.max(0,low-T.low)**2*.55*(ac+.2),.6);
-  t.lowShort=sat(Math.max(0,T.low-low)**2*(.35+wet*.8)*(ac+.2),.6);
-  t.mid=sat((mid-T.mid)**2*.22*(co+.2),.3);
-  t.steerQuick=sat(Math.max(0,T.steer-S.steer)**2*.035*(co+.25)*(1+wet),.5);
-  t.steerSlow=sat(Math.max(0,S.steer-T.steer)**2*.035*(ac+.25),.5);
-  t.stiff=sat(Math.max(0,stiff-T.stiff)**2*2.2,.5);
-  t.soft=sat(Math.max(0,T.stiff-stiff)**2*2.2,.5);
-  t.over=sat(Math.max(0,bal-pref)**2*1.6,.8);
-  t.under=sat(Math.max(0,pref-bal)**2*1.6,.8);
-  t.lockF=sat(Math.max(0,S.bias-T.bias-2)**2*.03,.4);
-  t.lockR=sat(Math.max(0,T.bias-S.bias-1)**2*.045,.5);
-  for(const k in t)t[k]*=1.6;
-  // which kind of track section each cause hurts: [straight, slow, fast]
-  const AT={grip:[0,.45,.55],drag:[1,0,0],limiter:[1,0,0],longTop:[.5,.5,0],lowLong:[0,1,0],lowShort:[0,1,0],mid:[0,.2,.8],
-    steerQuick:[0,0,1],steerSlow:[0,1,0],stiff:[0,.7,.3],soft:[0,.3,.7],over:[0,.5,.5],under:[0,.5,.5],lockF:[0,1,0],lockR:[0,1,0]};
-  const sec=sectorsOf(ti),tot=[0,1,2].map(j=>sec.reduce((s,x)=>s+[x.st,x.sl,x.fa][j]*x.len,0)||1);
-  const delta=sec.map(x=>{let s=0;for(const k in t){const a=AT[k];s+=t[k]*(a[0]*x.st*x.len/tot[0]+a[1]*x.sl*x.len/tot[1]+a[2]*x.fa*x.len/tot[2])}return s});
-  const loss=delta.reduce((a,b)=>a+b,0);
-  // tyre wear factor for the race: quick steering, stiff springs and an unbalanced car scrub the tyres
-  const wear=1+(3-S.steer)*.025+Math.max(0,stiff-.5)*.12+Math.abs(bal-pref)*.08;
-  return {loss,delta,t,T,vmax,aeroTop,gearTop,limited:gearTop<aeroTop-2,bal,D,sec,wear};
-}
-const setupLossOf=(S,tm,pref,wet,ti,cond=0)=>setupEval(S,tm,pref,wet,ti,cond).loss;
-// the best reachable setup (used to measure loss and for AI/engineer hints)
-function bestSetup(tm,pref,wet,ti,cond=0){
-  const ev=S=>setupLossOf(S,tm,pref,wet,ti,cond);let best=cloneSetup(SETUP_DEF),bt=ev(best);
-  const tryS=S=>{const v=ev(S);if(v<bt-1e-9){bt=v;best=S;return true}return false};
-  for(let pass=0;pass<10;pass++){let imp=false;
-    for(const k in SETUP_RANGE){const[a,b]=SETUP_RANGE[k];for(let v=a;v<=b;v++)if(v!==best[k]){const S=cloneSetup(best);S[k]=v;imp=tryS(S)||imp}}
-    for(let df=-3;df<=3;df++)for(let dr=-2;dr<=2;dr++){const S=cloneSetup(best);S.fw=clamp(S.fw+df,0,20);S.rw=clamp(S.rw+dr,1,11);imp=tryS(S)||imp}
-    for(let i=0;i<7;i++)for(const v of[-1,0,1])if(v!==best.gears[i]){const S=cloneSetup(best);S.gears[i]=v;imp=tryS(S)||imp}
-    if(!imp)break}
-  return {S:best,loss:bt};
-}
-// short driver comments for the biggest problems, tied to the sector where they cost the most
-const FB={grip:['Not enough grip in the corners, the car is sliding','rear wing'],drag:['Too much drag, we are slow on the straights','rear wing'],
-  limiter:['Hitting the limiter before the braking zone','top gear'],longTop:['Top gear is too long, we never reach it','top gear'],
-  lowLong:['Gears feel too long out of the slow corners','low gears'],lowShort:['Too much wheelspin out of the slow corners','low gears'],
-  mid:['Mid gears feel wrong out of the fast corners','gears 4 and 5'],steerQuick:['Steering is too twitchy in the fast corners','steering'],
-  steerSlow:['Can\'t get the car turned in at the hairpins','steering'],stiff:['Car is bouncing over the kerbs and bumps','suspension'],
-  soft:['Car feels lazy changing direction','suspension'],over:['Oversteer: the rear is stepping out','balance'],under:['Understeer: the front won\'t bite','balance'],
-  lockF:['Locking the fronts under braking','brake bias'],lockR:['Rear locking up into the braking zones','brake bias']};
-function setupComments(E){
-  const list=Object.entries(E.t).filter(([,v])=>v>.06).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  if(!list.length)return ['The car feels great. I would not change anything.'];
-  return list.map(([k])=>{const AT={grip:1,drag:0,limiter:0,longTop:0,lowLong:1,lowShort:1,mid:2,steerQuick:2,steerSlow:1,stiff:1,soft:2,over:1,under:2,lockF:1,lockR:1}[k];
-    const sk=[0,1,2].sort((a,b)=>[E.sec[b].st,E.sec[b].sl,E.sec[b].fa][AT]-[E.sec[a].st,E.sec[a].sl,E.sec[a].fa][AT])[0];
-    return `${FB[k][0]} (sector ${sk+1}).`});
-}
-
-/* ---------- race weekend: practice, qualifying, setups ---------- */
-const PRAC_MIN=60,RUN_MIN=8,Q_ATTEMPTS=3;
-const TEST_SETUP={fw:6,rw:3,gears:[1,0,0,1,0,0,0],top:7,steer:4,sf:7,sr:7,bias:57};   // first race of a career
-function prefText(p){return p>.12?'likes a loose, pointy car (oversteer)':p<-.12?'likes a planted, stable rear (understeer)':'likes a neutral car'}
-function startWeekend(){
-  const tr=track();
-  W={round:G.round,phase:'practice',wet:genWeather(tr),cond:+R(-1,1).toFixed(2),setup:{},quali:null,startTyre:{},startFuel:{},startFocus:{},aiLoss:{},q:null};
-  if(!G.lastSetup)G.lastSetup={};
-  for(const id of PT().drivers){const s=cloneSetup(G.lastSetup[id]||TEST_SETUP);
-    W.setup[id]={s,ran:cloneSetup(s),runs:[],clock:PRAC_MIN,pref:+(((id.charCodeAt(1)*37+id.length*11)%41-20)/100).toFixed(2),qRuns:[]}}
-  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers)W.aiLoss[id]=+(R(.05,.3)+(1-t.tier)*R(.1,.5)).toFixed(3);
-  UI.gdrv=PT().drivers[0];UI.gsel='fw';UI.editRace=null;
-  G.screen='weekend';save();render();
-}
-const pracWet=()=>W.wet[0];
-// pace without the setup, for the given conditions (soft/wet tyres, light fuel)
-function basePace(id,fuel){const d=drv(id),t=team(d.teamId),tr=track(),w=pracWet();const c=w<.2?'soft':bestTyreFor(w);
-  return lapTime({d,team:t,tyre:{c,wear:0},mode:2,eng:2,pc:freshPC(),fuel,setupLoss:0,noise:0},{w,grip:.65},tr)}
-function changedKinds(a,b){const k=[];if(a.fw!==b.fw)k.push('fw');if(a.rw!==b.rw)k.push('rw');if(a.top!==b.top||a.gears.some((g,i)=>g!==b.gears[i]))k.push('gears');
-  if(a.steer!==b.steer)k.push('steer');if(a.sf!==b.sf||a.sr!==b.sr)k.push('susp');if(a.bias!==b.bias)k.push('bias');return k}
-const changeMin=st=>changedKinds(st.s,st.ran).reduce((m,k)=>m+CHANGE_MIN[k],0);
-function evalFor(id,S,wet){const st=W.setup[id];return setupEval(S||st.s,PT(),st.pref,wet??pracWet(),G.round,W.cond)}
-function sessionBest(){ // best practice/quali sectors from the AI field, for purple sector colours
-  if(W.aiBest)return W.aiBest;const sec=sectorsOf(G.round);let lap=1e9;
-  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers){const v=basePace(id,6)+W.aiLoss[id];if(v<lap)lap=v}
-  return W.aiBest={lap,secs:sec.map(x=>lap*x.len)};
+function sessionBest(){if(W.aiBest)return W.aiBest;let best=null;
+  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers){const r=lapRecord(id,6);if(!best||r.lap<best.lap)best=r}
+  return W.aiBest={lap:best.lap,secs:best.secs};
 }
 function practiceRun(id){
   const st=W.setup[id],cost=RUN_MIN+changeMin(st);
   if(st.clock<cost)return toast(`Not enough practice time left: this run needs ${cost} minutes.`);
-  st.clock-=cost;const E=evalFor(id),d=drv(id),base=basePace(id,6),nz=()=>gauss()*(1.1-d.consistency/100)*.12;
-  const secs=E.sec.map((x,k)=>+(base*x.len+E.delta[k]+nz()).toFixed(3));
-  st.runs.push({s:cloneSetup(st.s),secs,lap:+secs.reduce((a,b)=>a+b,0).toFixed(3),trap:Math.round(E.vmax+gauss()*1.5),limited:E.limited,notes:setupComments(E),bal:E.bal});
-  st.ran=cloneSetup(st.s);save();render();
+  st.clock-=cost;st.runs.push(lapRecord(id,6));st.ran=cloneSetup(st.s);save();render();
 }
-/* ----- qualifying: 3 attempts per driver, AI times revealed round by round ----- */
 function startQuali(){
-  const res={},w=W.wet[0];
-  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers){const d=drv(id),b=basePace(id,2)+W.aiLoss[id];
+  const res={};
+  for(const t of G.teams)if(t.id!=='P')for(const id of t.drivers){const d=drv(id),b=paceOf(id,2).lap;
     res[id]=[0,1,2].map(r=>+(b+gauss()*(1.1-d.consistency/100)*.3-r*.08+(Math.random()<.06?R(.4,1.5):0)).toFixed(3))}
   W.q={ai:res,revealed:0};for(const id of PT().drivers)W.setup[id].qRuns=[];W.phase='qsession';save();render();
 }
-function qualiRun(id){
-  const st=W.setup[id];if(st.qRuns.length>=Q_ATTEMPTS)return;
-  const d=drv(id),E=evalFor(id,null,W.wet[0]),r=st.qRuns.length,base=basePace(id,2)-r*.08,nz=()=>gauss()*(1.1-d.consistency/100)*.1;
-  const secs=E.sec.map((x,k)=>+(base*x.len+E.delta[k]+nz()).toFixed(3));
-  st.qRuns.push({s:cloneSetup(st.s),secs,lap:+secs.reduce((a,b)=>a+b,0).toFixed(3),trap:Math.round(E.vmax+gauss()*1.5),notes:setupComments(E)});
-  W.q.revealed=Math.max(W.q.revealed,r+1);save();render();
-}
+function qualiRun(id){const st=W.setup[id];if(st.qRuns.length>=Q_ATTEMPTS)return;const r=st.qRuns.length;
+  st.qRuns.push(lapRecord(id,2,null,-r*.08,.07));W.q.revealed=Math.max(W.q.revealed,r+1);save();render()}
 function qualiTable(final){
   const rows=[];
   for(const t of G.teams)for(const id of t.drivers){
@@ -648,68 +620,57 @@ function qualiTable(final){
   rows.sort((a,b)=>(a.t??1e9)-(b.t??1e9));return rows;
 }
 function finishQuali(){
-  const rows=qualiTable(true).map(r=>({id:r.id,t:r.t??(basePace(r.id,2)+3)}));rows.sort((a,b)=>a.t-b.t);
+  const rows=qualiTable(true).map(r=>({id:r.id,t:r.t??(paceOf(r.id,2).lap+3)}));rows.sort((a,b)=>a.t-b.t);
   W.quali=rows;W.phase='quali';const tr=track();
-  for(const id of PT().drivers){W.startTyre[id]=W.wet[0]<.2?'medium':bestTyreFor(W.wet[0]);W.startFuel[id]=Math.min(tr.cap,Math.ceil(tr.laps/2)+2);W.startFocus[id]=0}
+  for(const id of PT().drivers){W.startTyre[id]=W.wet[0]<.2?'medium':bestTyreFor(W.wet[0]);W.startFuel[id]=Math.min(tr.cap,Math.ceil(tr.laps/2)+2)}
   save();render();
 }
-/* ----- garage editor ----- */
-function setP(id,k,d){const s=W.setup[id].s;if(k==='gear'){s.gears[d]=s.gears[d]===1?-1:s.gears[d]+1}else{const[a,b]=SETUP_RANGE[k];s[k]=clamp(s[k]+d,a,b)}save();renderKeepScroll()}
+/* ---------- garage: six dials and what they do ---------- */
+function setP(id,k,d){const s=W.setup[id].s,[a,b]=SETUP_RANGE[k];s[k]=clamp(s[k]+d,a,b);save();renderKeepScroll()}
 function renderKeepScroll(){const y=scrollY;render();scrollTo(0,y)}
-const stepper=(id,k,label,val,sub)=>`<div class="stp"><span class="eyebrow">${label}</span><div class="stp-row"><button class="stp-b" data-act="setp" data-id="${id}" data-k="${k}" data-d="-1" aria-label="Decrease ${label}">−</button><b class="mono">${val}</b><button class="stp-b" data-act="setp" data-id="${id}" data-k="${k}" data-d="1" aria-label="Increase ${label}">+</button></div>${sub?`<small class="muted">${sub}</small>`:''}</div>`;
-function partEditor(id){
-  if(!SETUP_PARTS.some(p=>p[0]===UI.gsel))UI.gsel='fw';
-  const s=W.setup[id].s,k=UI.gsel,P=SETUP_PARTS.find(p=>p[0]===k),E=evalFor(id);let ctl='',pic='';
-  if(k==='fw'){ctl=stepper(id,'fw','Front wing angle',s.fw+'°','0° flat · 20° steep');
-    pic=`<svg viewBox="0 0 160 70" class="gpic"><line x1="10" y1="60" x2="150" y2="60" stroke="var(--line)"/><g transform="rotate(${-s.fw*1.6} 40 45)"><path d="M20 45 L120 45 L120 39 Q70 33 20 41Z" fill="var(--accent)"/></g><text x="150" y="20" text-anchor="end" fill="var(--muted)" font-size="10">${s.fw}°</text></svg>`}
-  if(k==='rw'){ctl=stepper(id,'rw','Downforce level',s.rw,'1 low drag · 11 max grip');
-    pic=`<svg viewBox="0 0 160 70" class="gpic">${Array.from({length:s.rw},(_,i)=>`<rect x="${30+i*0}" y="${58-i*4.6}" width="100" height="3" rx="1.5" fill="var(--accent)" opacity="${.4+i*.055}"/>`).join('')}<rect x="28" y="6" width="3" height="56" fill="var(--line)"/><rect x="129" y="6" width="3" height="56" fill="var(--line)"/></svg>`}
-  if(k==='gears'){const lab=['S','M','L'];
-    ctl=`<div class="stp"><span class="eyebrow">Gear ratios · tap a gear to cycle Short / Medium / Long</span><div class="gears">${s.gears.map((g,i)=>`<button class="gbar" data-act="setp" data-id="${id}" data-k="gear" data-d="${i}" aria-label="Gear ${i+1}: ${['short','medium','long'][g+1]}"><i style="height:${18+(g+1)*22}px"></i><b>${i+1}</b><small>${lab[g+1]}</small></button>`).join('')}</div></div>
-      ${stepper(id,'top','Top gear (final drive)',s.top,`Limiter at about ${Math.round(E.gearTop)} km/h`)}`}
-  if(k==='steer'){ctl=stepper(id,'steer','Steering ratio',['','Very quick','Quick','Medium','Slow','Very slow'][s.steer],'Quick = sharp in hairpins · Slow = calm in fast corners');
-    const a=[0,150,120,95,75,55][s.steer];pic=`<svg viewBox="0 0 160 70" class="gpic"><circle cx="80" cy="38" r="24" fill="none" stroke="var(--accent)" stroke-width="5"/><path d="M80 38 L80 14" stroke="var(--accent)" stroke-width="4"/><path d="M${80-Math.sin(a*Math.PI/360)*30} ${38-Math.cos(a*Math.PI/360)*30} A30 30 0 0 1 ${80+Math.sin(a*Math.PI/360)*30} ${38-Math.cos(a*Math.PI/360)*30}" fill="none" stroke="var(--go)" stroke-width="2" stroke-dasharray="3 3"/><text x="150" y="20" text-anchor="end" fill="var(--muted)" font-size="10">lock ${a}°</text></svg>`}
-  if(k==='susp'){ctl=`<div class="row" style="gap:10px">${stepper(id,'sf','Front springs',s.sf,'1 soft · 10 stiff')}${stepper(id,'sr','Rear springs',s.sr,'1 soft · 10 stiff')}</div>`;
-    const spr=(x,v)=>`<path d="M${x} 10 ${Array.from({length:6},(_,i)=>`L${x+(i%2?8:-8)} ${14+i*(36-v*1.8)/6+i*3}`).join(' ')} L${x} 62" fill="none" stroke="var(--accent)" stroke-width="3"/>`;pic=`<svg viewBox="0 0 160 70" class="gpic">${spr(50,s.sf)}${spr(110,s.sr)}<text x="50" y="69" text-anchor="middle" fill="var(--muted)" font-size="9">front</text><text x="110" y="69" text-anchor="middle" fill="var(--muted)" font-size="9">rear</text></svg>`}
-  if(k==='bias'){ctl=stepper(id,'bias','Brake bias',s.bias+'% front',`${100-s.bias}% rear`);
-    pic=`<svg viewBox="0 0 160 70" class="gpic"><rect x="10" y="28" width="140" height="14" rx="7" fill="var(--panel2)"/><rect x="10" y="28" width="${140*s.bias/100}" height="14" rx="7" fill="var(--accent)"/><line x1="${10+140*.55}" y1="22" x2="${10+140*.55}" y2="48" stroke="var(--muted)" stroke-dasharray="2 2"/><text x="10" y="18" fill="var(--muted)" font-size="10">front</text><text x="150" y="18" text-anchor="end" fill="var(--muted)" font-size="10">rear</text></svg>`}
-  return `<div class="gedit"><div class="row" style="justify-content:space-between"><h3>${P[1]}</h3>${pic}</div><p class="muted" style="margin:0;font-size:13px">${P[2]}</p>${ctl}</div>`;
+const chip=(n,v)=>Math.abs(v)<.5?'':`<span class="echip ${v>0?'good':'bad'}">${n} ${v>0?'+':'−'}${Math.abs(v).toFixed(0)}</span>`;
+const chips=e=>(chip('Speed',e.speed)+chip('Accel',e.accel)+chip('Corner',e.corner))||'<span class="muted" style="font-size:11px">neutral</span>';
+function carNumbers(id){
+  const tm=PT(),m=modsOf(id),tr=track(),rows=[['speed','Top speed',m.speed,0],['accel','Acceleration',m.accel,1],['corner','Cornering',m.corner,2]];
+  return `<div class="cnums">${rows.map(([k,n,mod,i])=>{const base=carStat(tm,k),v=Math.max(1,base+mod);return `<div class="cnum"><div class="row" style="justify-content:space-between"><span class="eyebrow">${n}</span><span class="muted" style="font-size:11px">track ${Math.round(tr.d[i]*100)}%</span></div>
+    <div class="row" style="gap:8px;align-items:baseline"><b class="mono" style="font-size:22px">${v.toFixed(0)}</b><span class="mono ${mod>=.5?'good':mod<=-.5?'bad':'muted'}">${mod>=0?'+':'−'}${Math.abs(mod).toFixed(0)}</span>${k==='speed'?`<span class="muted mono" style="font-size:11px">≈ ${Math.round(trapKmh(v))} km/h</span>`:''}</div>
+    <div class="bar"><i style="width:${clamp(base,0,100)}%;background:var(--line)"></i><i style="left:${clamp(Math.min(base,v),0,100)}%;width:${Math.abs(mod)}%;background:${mod>=0?'var(--good)':'var(--bad)'}"></i></div></div>`}).join('')}</div>
+   <p class="muted" style="font-size:12px;margin:0">Parts give the base numbers; the setup adds or takes away (green / red). Each point is worth 0.035s a lap, weighted by how much the track needs it. This setup: <b style="color:var(--fg)">${setupDelta(m)<=0?'−':'+'}${Math.abs(setupDelta(m)).toFixed(2)}s</b> a lap.</p>`;
 }
-function balanceMeter(id){const st=W.setup[id],E=evalFor(id),x=clamp(50+E.bal*45,3,97),px=clamp(50+st.pref*45,3,97);
-  return `<div><div class="row" style="justify-content:space-between"><span class="eyebrow">Balance</span><span class="muted" style="font-size:12px">${esc(drv(id).name.split(' ')[1])} ${prefText(st.pref)}</span></div>
+function balanceMeter(id){const st=W.setup[id],m=modsOf(id),x=clamp(50+m.bal*35,3,97),px=clamp(50+st.pref*35,3,97);
+  return `<div><div class="row" style="justify-content:space-between"><span class="eyebrow">Balance · ${balText(m.be)}</span><span class="muted" style="font-size:12px">${esc(drv(id).name.split(' ')[1])} ${prefText(st.pref)}</span></div>
    <div class="balm"><span class="balm-p" style="left:${px}%" title="Driver's preference"></span><span class="balm-x" style="left:${x}%"></span></div>
    <div class="row muted" style="justify-content:space-between;font-size:11px"><span>Understeer</span><span>Neutral</span><span>Oversteer</span></div></div>`}
-function carDiagram(id){const sel=UI.gsel,c=PT().color,hs=[['fw',50,5,'Front wing'],['bias',16,20,'Brakes'],['steer',50,44,'Steering'],['susp',84,52,'Suspension'],['gears',50,76,'Gearbox'],['rw',50,94,'Rear wing']];
-  return `<div class="gcar">${carSVG(c)}${hs.map(([k,x,y,n])=>`<button class="ghs ${sel===k?'on':''}" style="left:${x}%;top:${y}%" data-act="gsel" data-v="${k}">${n}${changedKinds(W.setup[id].s,W.setup[id].ran).includes(k)&&W.phase==='practice'?' •':''}</button>`).join('')}</div>`}
+function dialRows(id,mode){const st=W.setup[id],S=st.s,ti=G.round,w=W.wet[0],ch=changedKinds(S,st.ran);
+  return `<div class="dials">${SETUP_PARTS.map(([k,n,lo,hi,txt])=>{const e=(k==='fw'||k==='rw')?null:dialEffect(k,S,ti,w,st.pref);
+    return `<div class="dial"><div class="dial-n"><b>${n}${mode==='practice'&&ch.includes(k)?' <span class="warn" title="Changed since last run">•</span>':''}</b><small class="muted">${txt}</small></div>
+     <div class="stp-row"><button class="stp-b" data-act="setp" data-id="${id}" data-k="${k}" data-d="-1" aria-label="${n} towards ${lo}">−</button><div class="dial-v"><b class="mono">${fmtSetupVal(k,S[k])}</b><small class="muted">${lo} ↔ ${hi}</small></div><button class="stp-b" data-act="setp" data-id="${id}" data-k="${k}" data-d="1" aria-label="${n} towards ${hi}">+</button></div>
+     <div class="dial-e">${k==='rw'?`<span class="muted" style="font-size:11px">Both wings:</span> ${chips(wingEffect(S,ti,w,st.pref))}`:k==='fw'?'<span class="muted" style="font-size:11px">see rear wing</span>':chips(e)}</div></div>`}).join('')}</div>`}
 function secCells(secs,lap,best,pb){return secs.map((v,k)=>{const cls=v<=best.secs[k]?'purple':pb&&v<=pb[k]?'good':'warn';return `<td class="mono ${cls}">${v.toFixed(3)}</td>`}).join('')+`<td class="mono ${lap<=best.lap?'purple':''}"><b>${fmtT(lap)}</b></td>`}
 function runTable(runs,best){if(!runs.length)return '<p class="muted" style="margin:0">No runs yet.</p>';
   const pb=[0,1,2].map(k=>Math.min(...runs.map(r=>r.secs[k])));
-  return `<div class="scroll"><table><tr><th>Run</th><th>S1</th><th>S2</th><th>S3</th><th>Lap</th><th>Trap</th></tr>${runs.map((r,i)=>`<tr><td class="mono">${i+1}</td>${secCells(r.secs,r.lap,best,pb)}<td class="mono">${r.trap} km/h${r.limited?' <span class="warn" title="Hit the limiter">⚑</span>':''}</td></tr>`).join('')}</table></div>`}
+  return `<div class="scroll"><table><tr><th>Run</th><th>S1</th><th>S2</th><th>S3</th><th>Lap</th><th>Trap</th></tr>${runs.map((r,i)=>`<tr><td class="mono">${i+1}</td>${secCells(r.secs,r.lap,best,pb)}<td class="mono">${r.trap} km/h</td></tr>`).join('')}</table></div>`}
 function garageHTML(id,mode){
-  const st=W.setup[id],t=PT(),cm=changeMin(st),runs=mode==='quali'?st.qRuns:st.runs,last=runs[runs.length-1],best=sessionBest();
+  const st=W.setup[id],cm=changeMin(st),runs=mode==='quali'?st.qRuns:st.runs,last=runs[runs.length-1];
   let actions='';
   if(mode==='practice')actions=`<div class="row" style="justify-content:space-between"><div><span class="eyebrow">Practice time left</span><div class="mono" style="font-size:20px">${st.clock} min</div></div>
-     <div class="row" style="gap:10px"><span class="muted" style="font-size:12px">${cm?`Garage work: ${cm} min · `:''}Run: ${RUN_MIN} min</span><button class="btn" data-act="prun" data-id="${id}" ${st.clock<RUN_MIN+cm?'disabled':''}>Run stint (${RUN_MIN+cm} min)</button></div></div>`;
+     <div class="row" style="gap:10px"><span class="muted" style="font-size:12px">${cm?`Changes: ${cm} min · `:''}Run: ${RUN_MIN} min</span><button class="btn" data-act="prun" data-id="${id}" ${st.clock<RUN_MIN+cm?'disabled':''}>Run stint (${RUN_MIN+cm} min)</button></div></div>`;
   if(mode==='quali')actions=`<div class="row" style="justify-content:space-between"><div><span class="eyebrow">Attempts</span><div class="mono" style="font-size:20px">${st.qRuns.length}/${Q_ATTEMPTS}</div></div>
      <button class="btn" data-act="qrun" data-id="${id}" ${st.qRuns.length>=Q_ATTEMPTS?'disabled':''}>Run qualifying lap</button></div>`;
-  if(mode==='race'){const E=evalFor(id,null,W.wet[0]);actions=`<p class="muted" style="margin:0;font-size:12px">Race conditions: about ${E.loss.toFixed(2)}s a lap off the ideal setup. Tyre wear ${E.wear>1.04?`<span class="warn">+${Math.round((E.wear-1)*100)}%</span>`:'normal'}.</p>`}
-  return `<div class="garage">
-   <div class="gtop">${carDiagram(id)}${partEditor(id)}</div>
-   ${balanceMeter(id)}
-   ${actions}
+  if(mode==='race'){const m=modsOf(id);actions=`<p class="muted" style="margin:0;font-size:12px">The race uses these numbers. Tyre wear with this setup: ${m.wear>1.04?`<span class="warn">+${Math.round((m.wear-1)*100)}%</span>`:'normal'}.</p>`}
+  return `<div class="garage">${carNumbers(id)}${balanceMeter(id)}${dialRows(id,mode)}${actions}
    ${mode!=='race'?`${last?`<div class="fbbox"><span class="eyebrow">${esc(drv(id).name.split(' ')[1])} on the radio (${mode==='quali'?'attempt':'run'} ${runs.length})</span>${last.notes.map(n=>`<div>“${esc(n)}”</div>`).join('')}</div>`:''}
-   ${runTable(runs,best)}
-   ${runs.length?`<div><span class="eyebrow">Speed through the lap · last run vs previous</span><canvas class="trace" id="trace-${id}" height="150"></canvas></div>`:''}`:''}
-  </div>`;
+   ${runTable(runs,sessionBest())}
+   ${runs.length?`<div><span class="eyebrow">Speed through the lap · last run vs previous</span><canvas class="trace" id="trace-${id}" height="150"></canvas></div>`:''}`:''}</div>`;
 }
-/* speed trace: from the track's curves, the setup's top speed, grip and acceleration */
+/* speed trace: from the track's curves plus the run's top speed, cornering and acceleration */
 function speedProfile(id,run){
-  const pa=path(G.round),N=200,E=evalFor(id,run.s,W.wet[0]);const ang=[];
+  const pa=path(G.round),N=200,m=modsOf(id,run.s),ang=[];
   for(let i=0;i<N;i++){const a=frame(pa,i/N),b=frame(pa,(i+1)/N);let da=b.ang-a.ang;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;ang.push(Math.abs(da))}
   const cur=ang.map((_,i)=>(ang[(i-2+N)%N]+ang[(i-1+N)%N]+ang[i]+ang[(i+1)%N]+ang[(i+2)%N])/5);
-  const gripPen=(E.t.grip+E.t.over+E.t.under+E.t.stiff+E.t.soft)*.025,accPen=(E.t.lowLong+E.t.lowShort+E.t.longTop)*.05;
-  let v=cur.map(c=>Math.min(run.trap,(70+250/(1+c*55))*(1-gripPen)));
-  for(let pass=0;pass<2;pass++){for(let i=1;i<N*2;i++){const j=i%N,p=(i-1)%N;v[j]=Math.min(v[j],v[p]+(6.5-accPen*20)*(320/(v[p]+80)))}
+  const grip=1+m.corner*.006,acc=6.5*(1+m.accel*.012);
+  let v=cur.map(c=>Math.min(run.trap,(70+250/(1+c*55))*grip));
+  for(let pass=0;pass<2;pass++){for(let i=1;i<N*2;i++){const j=i%N,p=(i-1)%N;v[j]=Math.min(v[j],v[p]+acc*(320/(v[p]+80)))}
     for(let i=N*2;i>0;i--){const j=i%N,n=(i+1)%N;v[j]=Math.min(v[j],v[n]+9)}}
   return v;
 }
@@ -734,9 +695,9 @@ function startRace(){
     const d=drv(q.id),t=team(d.teamId),mine=t.id==='P';
     const c=mine?W.startTyre[q.id]:(W.wet[0]<.2?(Math.random()<.35?'soft':Math.random()<.85?'medium':'hard'):bestTyreFor(W.wet[0]));
     const fuel=mine?W.startFuel[q.id]:Math.min(tr.cap,Math.round(tr.laps*R(.42,.6))+1.5);
-    RS.cars.push({id:q.id,d,team:t,mine,dist:-i*.003,lapsDone:0,lapStartT:0,tyre:{c,wear:0,age:0},pc:freshPC(),fuel,mode:1,eng:1,focus:mine?(W.startFocus[q.id]||0):(Math.random()<.75?bestFocus(tr):0),
+    RS.cars.push({id:q.id,d,team:t,mine,dist:-i*.003,lapsDone:0,lapStartT:0,tyre:{c,wear:0,age:0},pc:freshPC(),fuel,mode:1,eng:1,
       box:null,boxSel:c,rep:false,fuelT:null,pitT:0,pitTot:0,stall:0,dnf:null,fin:false,finT:0,last:null,best:null,cool:0,stops:0,grid:i+1,
-      wearThresh:R(66,80),setupLoss:mine?evalFor(q.id,null,W.wet[0]).loss:(W.aiLoss[q.id]??.3),wearSetup:mine?evalFor(q.id,null,W.wet[0]).wear:1,noise:(Math.random()-.5)*1.5,lt:tr.base,warned:{},side:i%2?1:-1,latT:0,lat:0,prevPos:i,pos:i});
+      wearThresh:R(66,80),setupPts:modsOf(q.id,null,W.wet[0]).pts,wearSetup:mine?modsOf(q.id,null,W.wet[0]).wear:1,noise:(Math.random()-.5)*1.5,lt:tr.base,warned:{},side:i%2?1:-1,latT:0,lat:0,prevPos:i,pos:i});
   });
   if(!G.lastSetup)G.lastSetup={};for(const id of PT().drivers)G.lastSetup[id]=cloneSetup(W.setup[id].s);
   W.phase='race';save();
@@ -786,7 +747,7 @@ function step(dt){
           const delta=ahead.lt-car.lt;let passed=false;
           if(car.cool<=0&&delta>.05){
             car.cool=1.8;
-            const p=clamp(.04+delta*.3+(car.d.racecraft-ahead.d.racecraft)/250+(car.mode===2?.06:0)+ovtFocus[car.focus||0]-(ahead.mode===2?.03:0)-RS.w*.05,.01,.75)*tr.ovt;
+            const p=clamp(.04+delta*.3+(car.d.racecraft-ahead.d.racecraft)/250+(car.mode===2?.06:0)-(ahead.mode===2?.03:0)-RS.w*.05,.01,.75)*tr.ovt;
             if(car.mine||ahead.mine)RS.comm=`${car.d.name} is attempting to overtake ${ahead.d.name}`;
             if(Math.random()<.005+RS.w*.01){
               if(car.mine||ahead.mine)feed(`Contact! ${car.d.name} hits ${ahead.d.name}.`,'hot');
@@ -803,7 +764,7 @@ function step(dt){
     if(car.dnf)continue;
     const moved=nd-car.dist,rf=1.6-relOf(car)/100,eF=[.6,1,1.8][car.eng],dF=[.7,1,1.4][car.mode];
     car.tyre.wear=Math.min(100,car.tyre.wear+moved*wearRate(car,car.tyre.c,RS.w,tr)*(RS.sc?.3:1));
-    car.fuel-=moved*[.85,1,1.18][car.eng]*fuelFocus[car.focus||0]*(RS.sc?.6:1);
+    car.fuel-=moved*[.85,1,1.18][car.eng]*(RS.sc?.6:1);
     const pr=car.team.parts;
     car.pc.engine-=moved*2.1*eF*(1.6-pr.engine.rel/100);car.pc.gearbox-=moved*1.6*eF*(1.6-pr.gearbox.rel/100);
     car.pc.brakes-=moved*1.7*dF*(1.6-pr.brakes.rel/100);car.pc.suspension-=moved*1.4*dF*(1.6-pr.suspension.rel/100);
@@ -1226,7 +1187,7 @@ function renderWeekend(){
   if(!t.drivers.includes(UI.gdrv))UI.gdrv=t.drivers[0];
   let body='';
   if(W.phase==='practice'){
-    body=`<p class="muted" style="max-width:76ch;margin-top:0">Each driver has ${PRAC_MIN} minutes. Tap a part on the car to adjust it, then run a stint and read the sector times, top speed and driver feedback. Garage work costs time: front wing ${CHANGE_MIN.fw} min, rear wing ${CHANGE_MIN.rw}, gearbox ${CHANGE_MIN.gears}, steering ${CHANGE_MIN.steer}, suspension ${CHANGE_MIN.susp}, brakes ${CHANGE_MIN.bias}.</p>
+    body=`<p class="muted" style="max-width:76ch;margin-top:0">Each driver has ${PRAC_MIN} minutes. Turn the dials and watch top speed, acceleration and cornering change, then run a stint and listen to the driver. Changing a dial costs garage time: wings ${CHANGE_MIN.fw} min each, gears ${CHANGE_MIN.gear}, steering ${CHANGE_MIN.steer}, suspension ${CHANGE_MIN.susp}, brakes ${CHANGE_MIN.bias}.</p>
     <div class="segs" style="margin-bottom:12px">${dtabs}</div>
     <div class="panel">${garageHTML(UI.gdrv,'practice')}</div>
     <div class="panel row" style="margin-top:16px;justify-content:space-between"><div><div class="eyebrow">Conditions</div>Track is ${condTxt} · qualifying ${W.wet[0]>.15?'<span class="warn">wet</span>':'dry'}</div><button class="btn" data-act="toquali">Go to qualifying ›</button></div>`;
@@ -1245,9 +1206,9 @@ function renderWeekend(){
       ${t.drivers.map(id=>{const d=drv(id),p=W.quali.findIndex(q=>q.id===id)+1;return `<div class="stack" style="gap:8px"><div class="row" style="justify-content:space-between"><b>${esc(d.name)}</b><span class="mono">Starts ${ord(p)}</span></div>
        <div class="boxrow">${TK.map(k=>`<button class="tbtn ${W.startTyre[id]===k?'on':''}" style="--c:${TYRES[k].col}" data-act="stTyre" data-id="${id}" data-v="${k}" title="${TYRES[k].n}">${TYRES[k].k}</button>`).join('')}<span class="muted" style="font-size:12px">${TYRES[W.startTyre[id]].n}</span></div>
        <div class="slider"><div class="row" style="justify-content:space-between"><label class="eyebrow" for="sf-${id}">Starting fuel</label><span class="mono" id="sfv-${id}">${W.startFuel[id]} laps</span></div><input type="range" min="3" max="${tr.cap}" step="0.5" value="${W.startFuel[id]}" id="sf-${id}" data-act="sfuel" data-id="${id}"></div>
-       <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:12px">Race setup: about ${evalFor(id,null,W.wet[0]).loss.toFixed(2)}s off ideal${evalFor(id,null,W.wet[0]).wear>1.04?', extra tyre wear':''}</span><button class="ghost" data-act="editrace" data-v="${id}">${UI.editRace===id?'Done':'Adjust setup'}</button></div>
+       <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:12px">Race setup: ${(()=>{const m=modsOf(id),tm=PT();return `top speed ${(carStat(tm,'speed')+m.speed).toFixed(0)}, acceleration ${(carStat(tm,'accel')+m.accel).toFixed(0)}, cornering ${(carStat(tm,'corner')+m.corner).toFixed(0)}${m.wear>1.04?`, tyre wear +${Math.round((m.wear-1)*100)}%`:''}`})()}</span><button class="ghost" data-act="editrace" data-v="${id}">${UI.editRace===id?'Done':'Adjust setup'}</button></div>
        ${UI.editRace===id?`<div class="panel" style="background:var(--bg)">${(UI.gdrv=id,garageHTML(id,'race'))}</div>`:''}
-       <div><div class="eyebrow" style="margin-bottom:6px">Race focus</div><div class="segs">${FOCUS.map((n,f)=>{const g=focusGain(f,tr);return `<button class="seg ${W.startFocus[id]===f?'on':''}" data-act="stFocus" data-id="${id}" data-v="${f}">${n}${f?` <span class="${g>0?'good':'bad'}">${g>0?'−':'+'}${Math.abs(g).toFixed(2)}s</span>`:''}</button>`}).join('')}</div></div></div>`}).join('')}
+       </div>`}).join('')}
       ${demandHTML(tr,t)}
       <div class="muted" style="font-size:12px">The tank holds ${tr.cap} laps, so everyone stops at least once. Each lap of fuel costs about 0.035s per lap in weight. Soft tyres are a second faster but last about 11 laps, mediums about 16, hards about 23.</div>
       <button class="btn" data-act="race">Start the race ›</button></div></div></div>`;
@@ -1274,10 +1235,10 @@ function staffPanel(){
 }
 // what a track asks of the car, and which race focus suits it
 function demandHTML(tr,t){
-  const bf=bestFocus(tr);
+  const bf=[0,1,2].sort((a,b)=>tr.d[b]-tr.d[a])[0]+1;
   return `<div class="stack" style="gap:8px"><div class="eyebrow">Track demands · ${tr.name}</div>
    ${STATS.map(([s,n],i)=>`<div class="row" style="gap:10px;flex-wrap:nowrap"><span style="width:96px;font-size:12px">${n}</span><div class="bar" style="flex:1;height:8px"><i style="width:${Math.round(tr.d[i]*170)}%;background:${i===bf-1?'var(--go)':'var(--accent)'}"></i></div><span class="mono" style="width:40px;text-align:right">${Math.round(tr.d[i]*100)}%</span><span class="mono muted" style="width:44px;text-align:right" title="Your car">${carStat(t,s).toFixed(0)}</span></div>`).join('')}
-   <p class="muted" style="font-size:12px;margin:0">${bf?`Best race focus here: <b style="color:var(--fg)">${FOCUS[bf]}</b>, about ${focusGain(bf,tr).toFixed(2)}s a lap quicker than Balanced.`:'No single demand stands out here. Balanced focus is best.'} Top speed uses 6% more fuel, Acceleration wears tyres 6% faster, Cornering 12% faster.</p></div>`;
+   <p class="muted" style="font-size:12px;margin:0">This track rewards <b style="color:var(--fg)">${STATS[bf-1][1].toLowerCase()}</b> most. ${bf===1?'Less wing and longer gears add top speed.':bf===2?'Shorter gears add acceleration.':'More wing and the right suspension add cornering.'} Set the car up in practice to trade the numbers it needs least for the one it needs most.</p></div>`;
 }
 /* ---------- race view ---------- */
 function panHTML(c,i){
@@ -1304,7 +1265,6 @@ function popHTML(i,kind){
   if(kind==='cond')return `<h4>Car condition</h4>${PARTS.map(([k,n])=>`<div class="prow"><span>${n}</span><div class="bar"><i id="q${i}-c${k}"></i></div><span class="mono" id="q${i}-cv${k}"></span></div>`).join('')}
     <p class="muted" style="font-size:12px;margin:0">Engine mode wears the engine and gearbox. Driving style wears the brakes and suspension. Parts under 50% are at risk of failing.</p>`;
   return `<h4>Strategy</h4>
-    <div><div class="lab">Race focus</div><div class="segs" style="margin-top:6px">${FOCUS.map((n,f)=>`<button class="seg" id="q${i}-f${f}" data-act="focus" data-c="${i}" data-v="${f}">${n}</button>`).join('')}</div><p class="muted" style="font-size:12px;margin:4px 0 0">${tr.name}: speed ${Math.round(tr.d[0]*100)}%, acceleration ${Math.round(tr.d[1]*100)}%, cornering ${Math.round(tr.d[2]*100)}%. ${bestFocus(tr)?`${FOCUS[bestFocus(tr)]} gains about ${focusGain(bestFocus(tr),tr).toFixed(2)}s a lap.`:'Balanced suits this track.'}</p></div>
     <div><div class="lab">Driving style</div><div class="segs" style="margin-top:6px">${['Conserve','Standard','Attack'].map((n,k)=>`<button class="seg" id="q${i}-m${k}" data-act="mode" data-c="${i}" data-v="${k}">${n}</button>`).join('')}</div><p class="muted" style="font-size:12px;margin:4px 0 0">Attack is faster and better at overtaking, but wears tyres and brakes and risks mistakes.</p></div>
     <div><div class="lab">Engine mode</div><div class="segs" style="margin-top:6px">${['Lean','Balanced','Rich'].map((n,k)=>`<button class="seg" id="q${i}-e${k}" data-act="eng" data-c="${i}" data-v="${k}">${n}</button>`).join('')}</div><p class="muted" style="font-size:12px;margin:4px 0 0">Rich burns 18% more fuel for a quarter second a lap. Lean saves 15% and costs three tenths.</p></div>`;
 }
@@ -1442,7 +1402,7 @@ function updRaceUI(){
     $(`#p${i}-ag`).textContent=a&&!c.dnf?gapStr(a,c):'—';$(`#p${i}-bg`).textContent=b&&!b.dnf&&!c.dnf?gapStr(c,b):'—';
     $(`#p${i}-last`).textContent=c.fin?'Finished':c.pitT>0?'In pits':fmtT(c.last);
     const pc=$(`#p${i}-pace`);if(a&&!c.dnf){const d=c.lt-a.lt;pc.textContent=sgn(d);pc.className=d<0?'good':'bad'}else{pc.textContent='—';pc.className=''}
-    $(`#p${i}-mode`).textContent=['Conserve','Standard','Attack'][c.mode]+(c.focus?' · '+FOCUS[c.focus]:'');
+    $(`#p${i}-mode`).textContent=['Conserve','Standard','Attack'][c.mode];
     const ty=TYRES[c.tyre.c],gg=$(`#p${i}-g`);gg.style.setProperty('--c',ty.col);gg.style.setProperty('--w',Math.round(100-c.tyre.wear));$(`#p${i}-gk`).textContent=ty.k;$(`#p${i}-gw`).textContent=Math.round(100-c.tyre.wear)+'%';
     $(`#p${i}-fl`).textContent=c.fuel.toFixed(1)+' laps';const sur=c.fuel-lapsLeft;const fs=$(`#p${i}-fs`);fs.textContent=c.fin?'':(sur>=0?'+':'')+sur.toFixed(1);fs.className=sur>=0?'good':'bad';
     $(`#p${i}-fb`).style.height=(c.fuel/tr.cap*100)+'%';
@@ -1460,7 +1420,7 @@ function updRaceUI(){
     }else if(UI.pop[i]==='cond'){
       for(const[k]of PARTS){const v=Math.max(0,c.pc[k]),el=$(`#q${i}-c${k}`);el.style.width=v+'%';el.style.background=v<38?'var(--bad)':v<60?'var(--warn)':'var(--good)';$(`#q${i}-cv${k}`).textContent=Math.round(v)+'%'}
     }else if(UI.pop[i]==='strat'){
-      for(let k=0;k<3;k++){$(`#q${i}-m${k}`).classList.toggle('on',c.mode===k);$(`#q${i}-e${k}`).classList.toggle('on',c.eng===k)}for(let f=0;f<4;f++)$(`#q${i}-f${f}`).classList.toggle('on',(c.focus||0)===f);
+      for(let k=0;k<3;k++){$(`#q${i}-m${k}`).classList.toggle('on',c.mode===k);$(`#q${i}-e${k}`).classList.toggle('on',c.eng===k)}
     }
   });
   $('#feed').innerHTML=RS.feed.slice(0,40).map(f=>`<div class="${f.cls}">L${f.lap} · ${esc(f.text)}</div>`).join('');
@@ -1499,7 +1459,7 @@ const TUT={
   ['Home','Your goals, sponsor target, factory and calendar. Press Continue (bottom right) to start the next race weekend.'],
   ['Car','Design new parts to make the car faster. Each part feeds top speed, acceleration or cornering. Hire staff engineers to build several parts at once.'],
   ['Drivers','Check your drivers\' skills and morale, and sign better ones from the market.'],
-  ['Race weekend','Practice: tap parts on the car (wings, gears, steering, suspension, brakes), run stints, and read sector times and driver feedback. Qualifying gives you three attempts. Then pick tyres, fuel and race focus.']],
+  ['Race weekend','Practice: turn six setup dials (wings, gears, steering, suspension, brakes) and watch top speed, acceleration and cornering change, then run stints and listen to the driver. Qualifying gives you three attempts. The race uses your setup.']],
  race:[['The race','The camera follows your car. Tap a car or a name in the standings to follow it, or switch to Track view.'],
   ['Your drivers','Each driver has a panel: position, tyre wear (the ring) and fuel. Pit sets up a stop, Condition shows part wear, Strategy sets focus, driving style and engine mode.'],
   ['Pit stops','The fuel tank never lasts the whole race, so plan at least one stop. Choose tyres and fuel, then press Box this lap. Your engineer suggests when to stop.'],
@@ -1576,13 +1536,12 @@ document.addEventListener('click',e=>{
     case 'fireeng':fireEng(v);break;
     case 'sign':sign(v,+el.dataset.s);break;
     case 'gdrv':UI.gdrv=v;renderKeepScroll();break;
-    case 'gsel':UI.gsel=v;renderKeepScroll();break;
     case 'setp':setP(el.dataset.id,el.dataset.k,+el.dataset.d);break;
     case 'prun':practiceRun(el.dataset.id);break;
     case 'toquali':startQuali();break;
     case 'qrun':qualiRun(el.dataset.id);break;
     case 'qfinish':finishQuali();break;
-    case 'editrace':UI.editRace=UI.editRace===v?null:v;UI.gsel=UI.gsel||'fw';renderKeepScroll();break;
+    case 'editrace':UI.editRace=UI.editRace===v?null:v;renderKeepScroll();break;
     case 'stTyre':W.startTyre[el.dataset.id]=v;save();render();break;
     case 'race':startRace();break;
     case 'speed':RS.speed=+v;document.querySelectorAll('[data-act=speed]').forEach(b=>b.classList.toggle('on',b===el));break;
@@ -1593,8 +1552,6 @@ document.addEventListener('click',e=>{
     case 'pop':openPop(+el.dataset.c,v);break;
     case 'mode':pc().mode=+v;updRaceUI();break;
     case 'eng':pc().eng=+v;updRaceUI();break;
-    case 'focus':pc().focus=+v;updRaceUI();break;
-    case 'stFocus':W.startFocus[el.dataset.id]=+v;save();render();break;
     case 'boxtyre':{const c=pc();c.boxSel=v;if(c.box)c.box.c=v;updRaceUI();break}
     case 'rep':{const c=pc();c.rep=el.checked;if(c.box)c.box.rep=c.rep;updRaceUI();break}
     case 'box':{const c=pc();c.box=c.box?null:{c:c.boxSel,rep:c.rep,fuel:c.fuelT??null};updRaceUI();break}
