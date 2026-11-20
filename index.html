@@ -350,7 +350,9 @@ const SAVE='pitwall-save-v3';
 // G.teams is the championship the player races in: always the same array as G.series[G.tier]
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({G:{...G,teams:undefined},W}))}catch(e){}}
 function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return !!(s&&s.G)}catch(e){return false}}
-function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;G.teams=G.series[G.tier];return true}}catch(e){}return false}
+function loadSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));if(s&&s.G){G=s.G;W=s.W;G.teams=G.series[G.tier];migrate();return true}}catch(e){}return false}
+// older saves had a single G.project and no staff: upgrade them in place
+function migrate(){if(!G.projects){G.projects=G.project?[{...G.project,eng:null}]:[]}delete G.project;if(!G.staff)G.staff=[];if(!G.engMarket)G.engMarket=engMarket()}
 const SER=()=>SERIES[G.tier];
 
 const team=id=>{for(const s of G.series){const t=s.find(t=>t.id===id);if(t)return t}};
@@ -379,7 +381,7 @@ function previewTeams(){
 }
 function newGame(pick2,customName,customColor){
   const[pl,pi]=pick2;
-  G={season:1,round:0,budget:0,nid:1,tier:pl,series:[[],[],[]],drivers:{},market:[],project:null,screen:'hub',last:null,history:[],seasonLog:[]};
+  G={season:1,round:0,budget:0,nid:1,tier:pl,series:[[],[],[]],drivers:{},market:[],projects:[],staff:[],engMarket:[],screen:'hub',last:null,history:[],seasonLog:[]};
   const nm=nameGen();let num=2;
   previewTeams().forEach((list,lvl)=>list.forEach((pv,i)=>{
     const mine=lvl===pl&&i===pi,S=SERIES[lvl];
@@ -389,7 +391,7 @@ function newGame(pick2,customName,customColor){
     for(let k=0;k<2;k++){const d=mkDriver(nm(),clamp(lerp(...S.drv,pv.tier)+R(-.08,.06),0,1));d.teamId=t.id;d.num=num++;t.drivers.push(d.id)}
     G.series[lvl].push(t);
   }));
-  G.teams=G.series[pl];
+  G.teams=G.series[pl];G.engMarket=engMarket();
   for(let k=0;k<6;k++){const d=mkDriver(nm(),lerp(...SERIES[pl].drv,R(.2,1)));d.num=num++;G.market.push(d.id)}
   UI.preview=null;save();
 }
@@ -636,12 +638,12 @@ function finishRace(){
   const mine=o.filter(c=>c.mine);
   if(mine.length===2&&!mine[0].dnf){mine[0].d.morale=clamp(mine[0].d.morale+2,0,100);mine[1].d.morale=clamp(mine[1].d.morale-2,0,100)}
   const target=sponsorTarget();
-  const fin={sponsor:pt.sponsor,bonus:best<=target?.6e6*SER().cost:0,prize:pts*SER().ppp*1e6,salaries:-pt.drivers.reduce((s,id)=>s+drv(id).salary,0)/TRACKS.length,running:-pt.running,fine:0,project:''};
+  const fin={sponsor:pt.sponsor,bonus:best<=target?.6e6*SER().cost:0,prize:pts*SER().ppp*1e6,salaries:-pt.drivers.reduce((s,id)=>s+drv(id).salary,0)/TRACKS.length,running:-pt.running,staff:-G.staff.reduce((a,e)=>a+engSalary(e),0)/TRACKS.length,fine:0,project:''};
   for(const[k,n]of PARTS){const p=pt.parts[k];if(p.risky&&Math.random()<.14){const f=1.5e6*SER().cost;p.risky=false;p.perf=Math.max(20,p.perf-8);fin.fine-=f;fin.project+=`Scrutineers found your ${n.toLowerCase()} outside the rules: fined ${money(f)}, part rebuilt to legal spec. `}}
-  if(G.project){G.project.left--;if(G.project.left<=0){const pj=G.project,p=pt.parts[pj.part];
+  for(const pj of G.projects.slice()){pj.left--;if(pj.left<=0){const p=pt.parts[pj.part];
     if(pj.kind==='rel'){p.rel=clamp(p.rel+pj.rel,0,99);fin.project+=`Reliability upgrade fitted to the ${pj.name.toLowerCase()} (+${pj.rel}). `}
     else{p.perf=clamp(p.perf+pj.perf,0,99);p.rel=pj.rel;p.risky=pj.kind==='grey';fin.project+=`New ${pj.name.toLowerCase()} fitted: +${pj.perf} performance, ${pj.rel} reliability. `}
-    G.project=null}}
+    G.projects.splice(G.projects.indexOf(pj),1)}}
   const net=Object.values(fin).filter(v=>typeof v==='number').reduce((a,b)=>a+b,0);G.budget+=net;
   for(const t of G.series.flat())if(t.id!=='P'&&Math.random()<.45+t.tier*.35){const k=pick(PARTS)[0];t.parts[k].perf=clamp(t.parts[k].perf+RI(1,3+Math.round(t.tier*2)),0,99)}
   simOtherSeries();
@@ -691,6 +693,7 @@ function newSeason(){
     if(d.teamId==='P'&&d.morale<20)left.push(d)}
   for(const d of left){const t=PT(),i=t.drivers.indexOf(d.id);const nd=G.drivers[G.market.shift()];t.drivers[i]=nd.id;nd.teamId='P';d.teamId=null;G.market.push(d.id);d.morale=60}
   const nm=nameGen();while(G.market.length<6){const d=mkDriver(nm(),lerp(...SER().drv,R(.2,1)));d.num=60+G.nid;G.market.push(d.id)}
+  G.engMarket=engMarket();
   G.season++;G.round=0;G.history=[];G.screen='hub';UI.tab='overview';save();render();
   const notes=[msg,left.length?`${left.map(d=>d.name).join(' and ')} quit over low morale. Replaced from the market.`:''].filter(Boolean);
   if(notes.length)toast(notes.join(' '));
@@ -701,13 +704,35 @@ const DESIGNS={
   safe:{n:'Conservative',cost:1.1e6,races:2,perf:[3,6],rel:[80,90],txt:'Proven concept. Small gain, very reliable.'},
   bold:{n:'Ambitious',cost:1.9e6,races:3,perf:[6,11],rel:[55,75],txt:'Bigger step. Reliability will suffer at first.'},
   grey:{n:'Grey area',cost:2.4e6,races:3,perf:[10,15],rel:[50,70],txt:'Bends the rules. Scrutineers may fine you each race.'}};
+/* staff engineers: each one hired adds a design slot, so several parts can be built at once.
+   Better engineers find extra performance and build faster. They are expensive. */
+const MAX_STAFF=2;
+const engSalary=e=>Math.round(e.base*SER().cost*20)/20*1e6;   // per season, scales with tier
+const engFee=e=>engSalary(e);                                  // signing fee: a full season up front
+const engBonus=e=>({perf:Math.floor(e.stars/2),faster:e.stars>=4?1:0,rel:e.stars*2});
+function engMarket(){const nm=nameGen();return [0,1,2].map(()=>{const stars=RI(1,5);return{id:'e'+(G.nid++),name:nm(),stars,base:+(1.2+stars*.6+R(-.15,.15)).toFixed(2)}})}
+const slots=()=>1+G.staff.length;
+const busy=id=>G.projects.some(p=>p.eng===id);
+function nextDesigner(){const free=G.staff.filter(e=>!busy(e.id)).sort((a,b)=>b.stars-a.stars)[0];if(free)return free;return busy(null)?undefined:null}
 function startDesign(kind){
-  if(G.project)return;const part=UI.dpart,name=PNAME[part];
-  if(kind==='rel'){const c=.6e6*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;G.project={part,name,kind,left:1,rel:RI(10,18),total:1}}
+  if(G.projects.length>=slots())return toast('All design slots are busy. Hire an engineer to build more parts at once.');
+  const part=UI.dpart,name=PNAME[part];
+  if(G.projects.some(p=>p.part===part))return toast(`The ${name.toLowerCase()} is already being worked on.`);
+  const eng=nextDesigner();if(eng===undefined)return toast('No designer is free.');
+  const b=eng?engBonus(eng):{perf:0,faster:0,rel:0};
+  if(kind==='rel'){const c=.6e6*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;G.projects.push({part,name,kind,left:1,rel:RI(10,18)+b.rel,total:1,eng:eng?eng.id:null})}
   else{const D=DESIGNS[kind],c=D.cost*SER().cost;if(G.budget<c)return toast('Not enough budget.');G.budget-=c;
-    G.project={part,name,kind,left:D.races,total:D.races,perf:RI(...D.perf),rel:RI(...D.rel)}}
-  save();render();toast(`Design started: ${name}. Ready in ${G.project.left} race${G.project.left>1?'s':''}.`);
+    const races=Math.max(1,D.races-b.faster);G.projects.push({part,name,kind,left:races,total:races,perf:RI(...D.perf)+b.perf,rel:Math.min(99,RI(...D.rel)+b.rel),eng:eng?eng.id:null})}
+  const pj=G.projects[G.projects.length-1];
+  save();render();toast(`${eng?eng.name:'Chief designer'} starts the ${name.toLowerCase()}. Ready in ${pj.left} race${pj.left>1?'s':''}.`);
 }
+function hireEng(id){
+  const e=G.engMarket.find(x=>x.id===id);if(!e)return;
+  if(G.staff.length>=MAX_STAFF)return toast(`You can employ at most ${MAX_STAFF} engineers.`);
+  const fee=engFee(e);if(G.budget<fee)return toast('Not enough budget for the signing fee.');
+  G.budget-=fee;G.staff.push(e);G.engMarket=G.engMarket.filter(x=>x!==e);save();render();toast(`${e.name} joins the design office. Signing fee ${money(fee)}.`);
+}
+function fireEng(id){if(busy(id))return toast('That engineer is still working on a part.');const e=G.staff.find(x=>x.id===id);G.staff=G.staff.filter(x=>x.id!==id);save();render();toast(`${e.name} has left the team.`)}
 function sign(fid,seat){
   const nd=drv(fid),t=PT(),old=drv(t.drivers[seat]),fee=nd.salary*.5;
   if(G.budget<fee)return toast('Not enough budget for the signing fee.');
@@ -897,7 +922,7 @@ function renderHub(){
       <div class="panel"><div class="eyebrow">Tier ${G.tier+1} · ${SER().name}</div><h3 style="margin-top:4px">${G.tier===0?'Avoid the bottom two to stay up':'Finish in the top two to be promoted'}</h3>
        <p class="muted" style="margin:4px 0 0">You are ${ord(standingsT().findIndex(x=>x.id==='P')+1)} of ${G.teams.length}. ${G.tier===0?'The bottom two teams drop to the Meridian Cup.':`The top two go up to the ${SERIES[G.tier-1].name}.`}${G.tier<2?` The bottom two drop to the ${SERIES[G.tier+1].name}.`:''}</p></div>
       <div class="panel"><div class="eyebrow">Sponsor objective</div><h3 style="margin-top:4px">Finish ${ord(sponsorTarget())} or better</h3><p class="muted" style="margin:4px 0 0">Bonus ${money(.6e6*SER().cost)}. Base sponsorship ${money(t.sponsor)} per race.</p></div>
-      <div class="panel"><div class="eyebrow">Factory</div>${G.project?`<h3 style="margin-top:4px">${G.project.name}: ${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n}</h3><p class="muted" style="margin:4px 0 0">Ready in ${G.project.left} race${G.project.left>1?'s':''}.</p>`:`<h3 style="margin-top:4px">Design team idle</h3><p class="muted" style="margin:4px 0 0">Start a new part from the Car screen.</p>`}</div>
+      <div class="panel"><div class="eyebrow">Factory · ${G.projects.length}/${slots()} design slots in use</div>${G.projects.length?G.projects.map(pj=>`<h3 style="margin-top:4px">${pj.name}: ${pj.kind==='rel'?'reliability':DESIGNS[pj.kind].n}</h3><p class="muted" style="margin:2px 0 0">${designerName(pj.eng)} · ready in ${pj.left} race${pj.left>1?'s':''}</p>`).join(''):`<h3 style="margin-top:4px">Design team idle</h3>`}${G.projects.length<slots()?`<p class="muted" style="margin:4px 0 0">${slots()-G.projects.length} slot${slots()-G.projects.length>1?'s':''} free. Start a part from the Car screen.</p>`:''}</div>
       <div class="panel"><div class="eyebrow">Calendar</div><div class="cal" style="margin-top:8px">${TRACKS.map((x,i)=>{const h=G.history.find(y=>y.round===i);return `<div class="${i===G.round?'now':i<G.round?'done':''}"><span class="eyebrow">R${i+1}</span><b>${x.name}</b>${h?`<span class="muted"><span class="chip" style="background:${h.wcolor}"></span>${esc(h.winner.split(' ')[1])}</span>`:''}</div>`}).join('')}</div></div>
      </div></div>`;
   }else if(UI.tab==='car'){
@@ -908,12 +933,14 @@ function renderHub(){
         <div class="muted" style="font-size:11px;margin-top:4px">${Object.keys(MIX[s]).map(k=>PNAME[k]).join(', ')} · ${tr.name} demand ${Math.round(tr.d[i]*100)}%</div></div>`}).join('')}</div></div>
      <div class="grid2"><div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Part fitting</h3><span class="eyebrow">Dots: importance at ${tr.name}</span></div>${partFit(t,tr)}
      <p class="muted" style="font-size:12px;margin:0">Reliability sets how fast each part wears during a race. Worn parts slow the car and can fail. You can repair them at a pit stop.</p></div>
-     <div class="panel stack"><h3>Design new parts</h3>
-      ${G.project?`<div><div class="eyebrow">In progress</div><p style="margin:4px 0">${G.project.name} (${G.project.kind==='rel'?'reliability':DESIGNS[G.project.kind].n})</p><div class="bar"><i style="width:${(1-G.project.left/G.project.total)*100+8}%"></i></div><p class="muted">Ready in ${G.project.left} race${G.project.left>1?'s':''}. One project at a time.</p></div>`:`
-      <div class="row"><label for="dpart" class="eyebrow">Part</label><select id="dpart" data-act="dpart">${PARTS.map(([k,n])=>`<option value="${k}" ${UI.dpart===k?'selected':''}>${n} (${t.parts[k].perf})</option>`).join('')}</select></div>
+     <div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Design new parts</h3><span class="mono">${G.projects.length}/${slots()} slots in use</span></div>
+      ${G.projects.map(pj=>`<div><div class="row" style="justify-content:space-between"><b>${pj.name}</b><span class="muted" style="font-size:12px">${pj.kind==='rel'?'Reliability':DESIGNS[pj.kind].n} · ${designerName(pj.eng)}</span></div><div class="bar" style="margin-top:6px"><i style="width:${(1-pj.left/pj.total)*100+8}%"></i></div><p class="muted" style="margin:4px 0 0;font-size:12px">Ready in ${pj.left} race${pj.left>1?'s':''}${pj.kind==='rel'?`: +${pj.rel}% reliability`:`: +${pj.perf} performance`}.</p></div>`).join('')}
+      ${G.projects.length>=slots()?`<p class="muted" style="margin:0">All design slots are busy.${G.staff.length<MAX_STAFF?' Hire an engineer below to build more parts at once.':''}</p>`:(()=>{const avail=PARTS.filter(([k])=>!G.projects.some(p=>p.part===k));if(!avail.some(([k])=>k===UI.dpart))UI.dpart=avail[0][0];const nd=nextDesigner();const b=nd?engBonus(nd):null;return `
+      <div class="row"><label for="dpart" class="eyebrow">Part</label><select id="dpart" data-act="dpart">${avail.map(([k,n])=>`<option value="${k}" ${UI.dpart===k?'selected':''}>${n} (${t.parts[k].perf})</option>`).join('')}</select>
+       <span class="muted" style="font-size:12px">Designer: <b style="color:var(--fg)">${designerName(nd?nd.id:null)}</b>${b?` · +${b.perf} perf, +${b.rel}% rel${b.faster?', 1 race faster':''}`:''}</span></div>
       <div class="design">${Object.entries(DESIGNS).map(([k,D])=>`<button class="dopt" data-act="design" data-v="${k}" ${G.budget<D.cost*SER().cost?'disabled':''}><b>${D.n}</b><span class="mono">${money(D.cost*SER().cost)} · ${D.races} races</span><span class="mono good">+${D.perf[0]}–${D.perf[1]} perf</span><span class="mono">${D.rel[0]}–${D.rel[1]}% reliability</span><span class="muted" style="font-size:12px">${D.txt}</span></button>`).join('')}
-       <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6*SER().cost?'disabled':''}><b>Improve part</b><span class="mono">${money(.6e6*SER().cost)} · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`}
-     </div></div>`;
+       <button class="dopt" data-act="design" data-v="rel" ${G.budget<.6e6*SER().cost?'disabled':''}><b>Improve part</b><span class="mono">${money(.6e6*SER().cost)} · 1 race</span><span class="mono good">+10–18% reliability</span><span class="muted" style="font-size:12px">Strengthen the current part.</span></button></div>`})()}
+     </div></div>${staffPanel()}`;
   }else if(UI.tab==='drivers'){
     page='Drivers';sub='Your line-up and the driver market.';
     body=`<div class="grid2">${t.drivers.map(id=>dcard(drv(id),t.color)).join('')}</div>
@@ -973,6 +1000,22 @@ function renderWeekend(){
   app.innerHTML=topBar(`Race weekend`,`Round ${G.round+1}: ${tr.name}`)+`<div class="steps">${steps.map((s,i)=>`<span class="${i===cur?'on':''}">${s}</span>`).join('')}</div>`+body;
 }
 
+const designerName=id=>{if(!id)return 'Chief designer';const e=G.staff.find(x=>x.id===id);return e?e.name:'Former engineer'};
+const engStars=n=>`<span class="stars">${'★'.repeat(n)}<s>${'★'.repeat(5-n)}</s></span>`;
+function staffPanel(){
+  const card=(e,hired)=>{const b=engBonus(e),sal=engSalary(e);return `<div class="pcard2" style="gap:6px"><div class="row" style="justify-content:space-between"><b>${esc(e.name)}</b>${engStars(e.stars)}</div>
+    <span class="mono" style="font-size:12px">+${b.perf} perf · +${b.rel}% rel${b.faster?' · 1 race faster':''}</span>
+    <span class="muted" style="font-size:12px">${money(sal)}/season${hired?'':` · signing fee ${money(engFee(e))}`}</span>
+    ${hired?(busy(e.id)?'<span class="tag pit" style="align-self:flex-start">Working on a part</span>':`<button class="ghost" data-act="fireeng" data-v="${e.id}">Release</button>`)
+      :`<button class="ghost" data-act="hireeng" data-v="${e.id}" ${G.staff.length>=MAX_STAFF||G.budget<engFee(e)?'disabled':''}>Hire for ${money(engFee(e))}</button>`}</div>`};
+  return `<div class="panel stack" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3>Engineering staff</h3><span class="mono">${G.staff.length}/${MAX_STAFF} engineers · ${slots()} design slot${slots()>1?'s':''}</span></div>
+   <p class="muted" style="margin:0;max-width:75ch">Your chief designer works on one part at a time. Each staff engineer you hire takes on another part at the same time, and better engineers add performance and build faster. They are expensive: a full season's salary up front, then their salary every race.</p>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+    <div class="pcard2" style="gap:6px"><div class="row" style="justify-content:space-between"><b>Chief designer</b><span class="muted" style="font-size:12px">Included</span></div><span class="mono" style="font-size:12px">Standard designs</span>${busy(null)?'<span class="tag pit" style="align-self:flex-start">Working on a part</span>':'<span class="muted" style="font-size:12px">Free</span>'}</div>
+    ${G.staff.map(e=>card(e,true)).join('')}</div>
+   <div class="eyebrow">Available engineers · refreshed each season</div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">${G.engMarket.length?G.engMarket.map(e=>card(e,false)).join(''):'<p class="muted" style="margin:0">No one else is looking for work this season.</p>'}</div></div>`;
+}
 // what a track asks of the car, and which race focus suits it
 function demandHTML(tr,t){
   const bf=bestFocus(tr);
@@ -1165,7 +1208,7 @@ function openPop(i,kind){
 }
 function renderResults(){
   const L=G.last,f=L.fin;
-  const rows=[['Sponsorship',f.sponsor],[`Sponsor bonus (${ord(L.target)} target)`,f.bonus],['Prize money',f.prize],['Driver salaries',f.salaries],['Running costs',f.running]];if(f.fine)rows.push(['Scrutineering fine',f.fine]);
+  const rows=[['Sponsorship',f.sponsor],[`Sponsor bonus (${ord(L.target)} target)`,f.bonus],['Prize money',f.prize],['Driver salaries',f.salaries],['Running costs',f.running]];if(f.staff)rows.push(['Engineer salaries',f.staff]);if(f.fine)rows.push(['Scrutineering fine',f.fine]);
   app.innerHTML=topBar('Race result',`Round ${L.round+1}: ${L.track}`)+`<h2 style="margin-bottom:16px">${L.track} Grand Prix</h2>
   <div class="grid2"><div class="panel"><div class="scroll"><table><tr><th>Pos</th><th>Driver</th><th>Team</th><th>Grid</th><th>Stops</th><th>Best lap</th><th>Pts</th></tr>
    ${L.res.map(r=>{const d=drv(r.id),t=team(d.teamId)||{color:'#888',short:'—'};return `<tr class="${d.teamId==='P'?'me':''}"><td class="mono">${r.dnf?'DNF':r.pos}</td><td>${esc(d.name)}${r.dnf?` <span class="muted" style="font-size:11px">${esc(r.dnf)}</span>`:''}</td><td><span class="chip" style="background:${t.color}"></span>${t.short}</td><td class="mono">${r.grid}</td><td class="mono">${r.stops}</td><td class="mono ${r.fl?'purple':''}">${fmtT(r.best)}</td><td class="mono"><b>${r.pts||''}</b></td></tr>`}).join('')}</table></div></div>
@@ -1213,6 +1256,8 @@ document.addEventListener('click',e=>{
     case 'tab':UI.tab=v;render();break;
     case 'weekend':startWeekend();break;
     case 'design':startDesign(v);break;
+    case 'hireeng':hireEng(v);break;
+    case 'fireeng':fireEng(v);break;
     case 'sign':sign(v,+el.dataset.s);break;
     case 'run':practiceRun(el.dataset.id);break;
     case 'quali':runQuali();break;
